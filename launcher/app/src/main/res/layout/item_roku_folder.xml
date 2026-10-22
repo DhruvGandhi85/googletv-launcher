@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:layout_marginBottom="12dp">
+
+    <FrameLayout
+        android:id="@+id/card"
+        android:layout_width="160dp"
+        android:layout_height="90dp"
+        android:foreground="@drawable/apple_focus_ring"
+        android:focusable="true"
+        android:clickable="true">
+
+        <!-- Grid 2x2 Folder Card (160x90dp, Proportional 16:9, No Stretch) -->
+        <LinearLayout
+            android:id="@+id/surface"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToOutline="true"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:background="@drawable/apple_card_surface">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="2dp">
+
+                <ImageView
+                    android:id="@+id/icon1"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="2dp"
+                    android:scaleType="fitXY"
+                    android:contentDescription="@null" />
+
+                <ImageView
+                    android:id="@+id/icon2"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="2dp"
+                    android:scaleType="fitXY"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="2dp">
+
+                <ImageView
+                    android:id="@+id/icon3"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="2dp"
+                    android:scaleType="fitXY"
+                    android:contentDescription="@null" />
+
+                <ImageView
+                    android:id="@+id/icon4"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="2dp"
+                    android:scaleType="fitXY"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/name"
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="#D9FFFFFF"
+        android:textSize="12.5sp"
+        android:fontFamily="sans-serif-medium" />
+</LinearLayout>

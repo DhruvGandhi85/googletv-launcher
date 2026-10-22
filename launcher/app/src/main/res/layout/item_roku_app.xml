@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:layout_marginBottom="12dp">
+
+    <FrameLayout
+        android:id="@+id/card"
+        android:layout_width="160dp"
+        android:layout_height="90dp"
+        android:foreground="@drawable/apple_focus_ring"
+        android:focusable="true"
+        android:clickable="true">
+
+        <!-- Grid 16:9 Banner Surface (160x90dp, Proportional 16:9, No Stretch) -->
+        <FrameLayout
+            android:id="@+id/surface"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToOutline="true"
+            android:background="@drawable/apple_card_surface">
+
+            <ImageView
+                android:id="@+id/banner"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/icon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:scaleType="fitCenter"
+                android:visibility="gone"
+                android:contentDescription="@null" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/name"
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="#D9FFFFFF"
+        android:textSize="12.5sp"
+        android:fontFamily="sans-serif-medium" />
+</LinearLayout>

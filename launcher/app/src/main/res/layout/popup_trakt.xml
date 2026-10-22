@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="420dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/glass_panel"
+    android:padding="20dp"
+    android:elevation="16dp">
+
+    <TextView
+        android:id="@+id/traktTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Connect Your Trakt Account"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20sp"
+        android:fontFamily="@font/outfit"
+        android:fontVariationSettings="'wght' 600" />
+
+    <TextView
+        android:id="@+id/traktStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Sync your personal Trakt Watchlist, Up Next, and History with Stremio (PenguPlay), Peacock, and Apple TV+."
+        android:textColor="#B3FFFFFF"
+        android:textSize="13sp"
+        android:fontFamily="@font/outfit" />
+
+    <TextView
+        android:id="@+id/traktCodeBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:padding="12dp"
+        android:gravity="center"
+        android:background="@drawable/tile_bg"
+        android:textColor="#FFFFFFFF"
+        android:textSize="24sp"
+        android:fontFamily="@font/outfit"
+        android:fontVariationSettings="'wght' 700"
+        android:letterSpacing="0.18"
+        android:visibility="gone" />
+
+    <EditText
+        android:id="@+id/traktUsernameInput"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="12dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="@drawable/tile_bg"
+        android:hint="Or enter public Trakt username..."
+        android:textColor="#FFFFFFFF"
+        android:textColorHint="#66FFFFFF"
+        android:textSize="14sp"
+        android:singleLine="true"
+        android:imeOptions="actionDone"
+        android:inputType="textNoSuggestions" />
+
+    <LinearLayout
+        android:id="@+id/traktActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical" />
+</LinearLayout>

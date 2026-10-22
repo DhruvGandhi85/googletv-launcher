@@ -4,6 +4,7 @@
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Needed on Android 10 to read the Wi-Fi network name; granted over adb at install time. -->
@@ -14,10 +15,12 @@
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/banner"
         android:theme="@style/Theme.TvHome"
+        android:hardwareAccelerated="true"
         android:allowBackup="false">
 
         <activity
             android:name=".MainActivity"
+            android:label="Custom Launcher"
             android:exported="true"
             android:launchMode="singleTask"
             android:stateNotNeeded="true"
@@ -25,24 +28,44 @@
             android:clearTaskOnLaunch="true"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|uiMode"
             android:screenOrientation="landscape">
-            <intent-filter>
+            <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
-        <!-- Screensaver: pick it in Settings, or `settings put secure screensaver_components
-             com.gathin.tvhome/.ClockDream` over adb. -->
+        <!-- Screensaver: disable internal ClockDream so native Google TV Ambient Mode (dreamx) is used -->
         <service
             android:name=".ClockDream"
             android:label="@string/dream_name"
-            android:exported="true"
+            android:exported="false"
+            android:enabled="false"
             android:permission="android.permission.BIND_DREAM_SERVICE">
             <intent-filter>
                 <action android:name="android.service.dreams.DreamService" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+        </service>
+
+        <!-- Hardware remote button remapper service -->
+        <service
+            android:name=".RemoteKeyMapperService"
+            android:label="Remote Button Remapper"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
         </service>
     </application>
 </manifest>

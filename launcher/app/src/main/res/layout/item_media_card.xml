@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingEnd="10dp">
+
+    <!-- Outer focus ring wrapper -->
+    <FrameLayout
+        android:id="@+id/card"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:foreground="@drawable/apple_focus_ring"
+        android:focusable="true"
+        android:clickable="true">
+
+        <!-- Compact 16:9 Apple TV Artwork Card (156x88dp) -->
+        <FrameLayout
+            android:id="@+id/surface"
+            android:layout_width="156dp"
+            android:layout_height="88dp"
+            android:clipToOutline="true"
+            android:background="@drawable/apple_card_surface">
+
+            <ImageView
+                android:id="@+id/backdrop"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                android:contentDescription="@null" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <!-- Title & Metadata cleanly BELOW the card -->
+    <TextView
+        android:id="@+id/mediaTitle"
+        android:layout_width="156dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginStart="3dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="#F2FFFFFF"
+        android:textSize="11.5sp"
+        android:fontFamily="sans-serif-medium" />
+
+    <TextView
+        android:id="@+id/mediaSub"
+        android:layout_width="156dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="3dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="#80FFFFFF"
+        android:textSize="9.5sp"
+        android:fontFamily="sans-serif" />
+</LinearLayout>

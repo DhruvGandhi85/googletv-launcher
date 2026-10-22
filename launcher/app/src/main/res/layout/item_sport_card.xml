@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingEnd="10dp">
+
+    <FrameLayout
+        android:id="@+id/card"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:foreground="@drawable/apple_focus_ring"
+        android:focusable="true"
+        android:clickable="true">
+
+        <!-- Clean 216x88dp Live Sports Scoreboard Card with Logos & TV Channel -->
+        <LinearLayout
+            android:id="@+id/surface"
+            android:layout_width="216dp"
+            android:layout_height="88dp"
+            android:clipToOutline="true"
+            android:orientation="vertical"
+            android:paddingStart="11dp"
+            android:paddingEnd="11dp"
+            android:paddingTop="7dp"
+            android:paddingBottom="7dp"
+            android:background="@drawable/apple_card_surface">
+
+            <!-- Top Row: Live Clock / Status & Broadcast Channel & Odds -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/statusBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:layout_marginEnd="6dp"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="9sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/channelBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:textColor="#81D4FA"
+                    android:textSize="9.5sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/networkBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="9.5sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Away Team Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <View
+                    android:id="@+id/awayBar"
+                    android:layout_width="3dp"
+                    android:layout_height="14dp"
+                    android:layout_marginEnd="6dp" />
+
+                <ImageView
+                    android:id="@+id/awayLogo"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="6dp"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:id="@+id/awayTeam"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/awayScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13.5sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <!-- Home Team Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3.5dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <View
+                    android:id="@+id/homeBar"
+                    android:layout_width="3dp"
+                    android:layout_height="14dp"
+                    android:layout_marginEnd="6dp" />
+
+                <ImageView
+                    android:id="@+id/homeLogo"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="6dp"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:id="@+id/homeTeam"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/homeScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="13.5sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:singleLine="true" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>
