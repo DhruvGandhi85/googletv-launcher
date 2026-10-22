@@ -55,6 +55,8 @@ public final class HubDataFetcher {
     /** OAuth Device Code pair (requires matching client_id + client_secret for token exchange) */
     public static final String TRAKT_OAUTH_CLIENT_ID = "e6fde6173adf3c6af8fd1b0694b9b84d7c519cefc24482310e1de06c6abe5467";
     public static final String TRAKT_OAUTH_CLIENT_SECRET = "15119384341d9a61c751d8d515acbc0dd801001d4ebe85d3eef9885df80ee4d9";
+    public static final String DEFAULT_TRAKT_TOKEN = "xr_TWrh5JzkX2DGAyg0XQG4PG6lojguyhsFIkisoh1nl4iRo0eXDtoTVbJxqTLUb";
+    public static final String DEFAULT_TRAKT_USERNAME = "DhruvG85";
     private static final String PREFS_NAME = "tvhome_hub_prefs";
 
     private static final ExecutorService IO_POOL = Executors.newFixedThreadPool(8);
@@ -235,11 +237,15 @@ public final class HubDataFetcher {
     }
 
     public static String getTraktUsername(Context ctx) {
-        return prefs(ctx).getString("trakt_username", "").trim();
+        if (ctx == null) return DEFAULT_TRAKT_USERNAME;
+        String u = prefs(ctx).getString("trakt_username", "").trim();
+        return u.isEmpty() ? DEFAULT_TRAKT_USERNAME : u;
     }
 
     public static String getTraktToken(Context ctx) {
-        return prefs(ctx).getString("trakt_token", "").trim();
+        if (ctx == null) return DEFAULT_TRAKT_TOKEN;
+        String t = prefs(ctx).getString("trakt_token", "").trim();
+        return t.isEmpty() ? DEFAULT_TRAKT_TOKEN : t;
     }
 
     public static void saveTraktAuth(Context ctx, String token, String username) {
@@ -270,11 +276,11 @@ public final class HubDataFetcher {
     }
 
     public static Set<String> defaultFavTeams() {
-        return new HashSet<>();
+        return new HashSet<>(Arrays.asList("ARI", "NYG", "BKN", "CARDINALS", "GIANTS", "NETS"));
     }
 
     public static boolean isFavTeam(Set<String> favs, String abbr, String name) {
-        if (favs == null || favs.isEmpty()) return false;
+        if (favs == null || favs.isEmpty()) favs = defaultFavTeams();
         String a = abbr != null ? abbr.toUpperCase() : "";
         String n = name != null ? name.toUpperCase() : "";
         if (favs.contains(a)) return true;

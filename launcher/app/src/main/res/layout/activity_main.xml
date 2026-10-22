@@ -39,10 +39,10 @@
         android:orientation="vertical"
         android:clipChildren="false"
         android:clipToPadding="false"
-        android:paddingLeft="36dp"
-        android:paddingRight="36dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="8dp">
+        android:paddingLeft="58dp"
+        android:paddingRight="58dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="18dp">
 
         <!-- COMPACT APPLE TV TOP BAR -->
         <!-- CLEAN GOOGLE TV / APPLE TV STYLE TOP BAR -->
@@ -573,7 +573,7 @@
 
         <ScrollView
             android:id="@+id/inputsScroll"
-            android:layout_width="840dp"
+            android:layout_width="740dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="20dp"

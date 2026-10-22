@@ -334,6 +334,19 @@ public class MainActivity extends Activity {
         }
         remapEd.apply();
 
+        SharedPreferences hubPrefs = HubDataFetcher.prefs(this);
+        SharedPreferences.Editor hubEd = hubPrefs.edit();
+        if (!hubPrefs.contains("trakt_token")) {
+            hubEd.putString("trakt_token", HubDataFetcher.DEFAULT_TRAKT_TOKEN);
+        }
+        if (!hubPrefs.contains("trakt_username")) {
+            hubEd.putString("trakt_username", HubDataFetcher.DEFAULT_TRAKT_USERNAME);
+        }
+        if (!hubPrefs.contains("fav_teams_set")) {
+            hubEd.putStringSet("fav_teams_set", HubDataFetcher.defaultFavTeams());
+        }
+        hubEd.apply();
+
         View btnNewFolder = findViewById(R.id.btnNewFolder);
         if (btnNewFolder != null) {
             btnNewFolder.setOnClickListener(v -> showCreateFolderModal());
@@ -2208,28 +2221,10 @@ public class MainActivity extends Activity {
             }
         }
 
-        View topBar = findViewById(R.id.topBar);
-        boolean isTopBar = (topBar != null && v.getParent() == topBar);
-        boolean isSmallButton = isTopBar || v.getId() == R.id.btnSportsSettings || v.getId() == R.id.btnNewFolder;
-
-        float targetScale = hasFocus ? (isSmallButton ? 1.035f : 1.055f) : 1.0f;
-        float targetElevation = hasFocus ? (isSmallButton ? dp(3) : dp(8)) : 0f;
-
-        if (v.getWidth() > 0 && v.getHeight() > 0) {
-            v.setPivotX(v.getWidth() / 2f);
-            v.setPivotY(v.getHeight() / 2f);
-        }
-
-        v.animate()
-                .scaleX(targetScale)
-                .scaleY(targetScale)
-                .translationZ(targetElevation)
-                .setDuration(hasFocus ? 220 : 180)
-                .setInterpolator(hasFocus ?
-                        (isSmallButton ? new DecelerateInterpolator(1.5f) : new OvershootInterpolator(1.15f)) :
-                        new DecelerateInterpolator(1.5f))
-                .withLayer()
-                .start();
+        v.animate().cancel();
+        v.setScaleX(1.0f);
+        v.setScaleY(1.0f);
+        v.setTranslationZ(0f);
     }
 
     private int findNonEmptyRow(int start, int step) {
