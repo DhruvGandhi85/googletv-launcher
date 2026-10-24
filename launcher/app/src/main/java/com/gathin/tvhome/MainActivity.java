@@ -246,6 +246,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        InputLogBuffer.init(getFilesDir());
         setContentView(R.layout.activity_main);
 
         hubScroll = findViewById(R.id.hubScroll);

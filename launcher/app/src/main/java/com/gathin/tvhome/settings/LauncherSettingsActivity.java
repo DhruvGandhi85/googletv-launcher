@@ -2,6 +2,7 @@ package com.gathin.tvhome.settings;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -28,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gathin.tvhome.HubDataFetcher;
+import com.gathin.tvhome.InputLogBuffer;
 import com.gathin.tvhome.RemoteKeyMapperService;
 
 import java.util.ArrayList;
@@ -290,6 +292,8 @@ public class LauncherSettingsActivity extends Activity {
 
         createKeySnifferRow();
 
+        createRow("Live Input Log", "View", this::showInputLogDialog);
+
         createRow("Reset Remappings", "Reset", () -> {
             getSharedPreferences(RemoteKeyMapperService.PREFS_REMAP, MODE_PRIVATE).edit().clear().apply();
             Toast.makeText(this, "Reset to defaults", Toast.LENGTH_SHORT).show();
@@ -448,6 +452,59 @@ public class LauncherSettingsActivity extends Activity {
 
     // 5. SYSTEM
     private void buildSystemContent() {
+        SharedPreferences sp = getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE);
+        boolean override = sp.getBoolean("override_stock_launcher", true);
+        createRow("Launcher Override", override ? "Active (Projectivy Guard)" : "Disabled", () -> {
+            sp.edit().putBoolean("override_stock_launcher", !override).apply();
+            Toast.makeText(this, !override ? "Clean TV Launcher override active" : "Stock launcher override disabled", Toast.LENGTH_SHORT).show();
+            loadCategoryContent(5);
+        });
+
+        createRow("Picture & Display", "Open", () -> {
+            Intent intent = new Intent();
+            intent.setClassName("com.android.tv.settings", "com.android.tv.settings.device.display.DisplayActivity");
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                try {
+                    startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS));
+                } catch (Exception ignored) {}
+            }
+        });
+
+        createRow("Audio & Sound", "Open", () -> {
+            Intent intent = new Intent();
+            intent.setClassName("com.android.tv.settings", "com.android.tv.settings.device.sound.SoundActivity");
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                try {
+                    startActivity(new Intent(Settings.ACTION_SOUND_SETTINGS));
+                } catch (Exception ignored) {}
+            }
+        });
+
+        createRow("TCL Engineering Menu", "Open", () -> {
+            try {
+                Intent intent = new Intent();
+                intent.setClassName("com.tcl.tv.settings", "com.tcl.tv.settings.FactoryActivity");
+                startActivity(intent);
+            } catch (Exception e) {
+                try {
+                    Intent intent = new Intent("com.tcl.factorymenu");
+                    startActivity(intent);
+                } catch (Exception ignored) {
+                    Toast.makeText(this, "TCL Factory menu not available on this model", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        createRow("Developer Options", "Open", () -> {
+            try {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS));
+            } catch (Exception ignored) {}
+        });
+
         createRow("Google TV Launcher", "Switch", () -> {
             PackageManager pm = getPackageManager();
             Intent i = pm.getLeanbackLaunchIntentForPackage("com.google.android.apps.tv.launcherx");
@@ -482,6 +539,39 @@ public class LauncherSettingsActivity extends Activity {
                 startActivity(new Intent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS));
             } catch (Exception ignored) {}
         });
+    }
+
+    private void showInputLogDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert);
+        builder.setTitle("Input Log");
+
+        List<InputLogBuffer.Entry> list = InputLogBuffer.getEntries();
+        if (list.isEmpty()) {
+            builder.setMessage("No key events logged yet. Press buttons on your remote or web remote to see real-time diagnostics.");
+        } else {
+            StringBuilder sb = new StringBuilder();
+            int start = Math.max(0, list.size() - 25);
+            for (int i = list.size() - 1; i >= start; i--) {
+                sb.append(list.get(i).toLogLine()).append("\n");
+            }
+            ScrollView sv = new ScrollView(this);
+            TextView tv = new TextView(this);
+            tv.setText(sb.toString());
+            tv.setTextColor(Color.WHITE);
+            tv.setTypeface(Typeface.MONOSPACE);
+            tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            tv.setPadding(dp(16), dp(12), dp(16), dp(12));
+            sv.addView(tv);
+            builder.setView(sv);
+        }
+
+        builder.setPositiveButton("Refresh", (dialog, which) -> showInputLogDialog());
+        builder.setNegativeButton("Clear", (dialog, which) -> {
+            InputLogBuffer.clear();
+            Toast.makeText(this, "Log cleared", Toast.LENGTH_SHORT).show();
+        });
+        builder.setNeutralButton("Close", null);
+        builder.show();
     }
 
     // ROW BUILDER

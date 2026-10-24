@@ -16,6 +16,7 @@ Consolidated tab and subtab architecture following Jakub Krehel's "Less is More"
 """
 
 import argparse
+import collections
 import html
 import json
 import os
@@ -1506,6 +1507,21 @@ HTML_MASTER = """<!DOCTYPE html>
       white-space: pre-wrap;
     }
 
+    .input-log-box {
+      background: #080a0e;
+      border: 1px solid #1c222d;
+      border-radius: 9px;
+      padding: 10px 12px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.74rem;
+      line-height: 1.5;
+      color: #94a3b8;
+      height: 480px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
     /* Toast */
     #toast {
       position: fixed;
@@ -1553,6 +1569,7 @@ HTML_MASTER = """<!DOCTYPE html>
     <div class="subtabs-bar active" data-parent="remote">
       <button class="subtab-btn active" data-sub="tcl" onclick="switchSubTab('remote', 'tcl')">TCL Voice</button>
       <button class="subtab-btn" data-sub="classic" onclick="switchSubTab('remote', 'classic')">Classic TV</button>
+      <button class="subtab-btn" data-sub="log" onclick="switchSubTab('remote', 'log')">Input Log</button>
     </div>
 
     <!-- Subtabs for Launcher -->
@@ -1561,10 +1578,11 @@ HTML_MASTER = """<!DOCTYPE html>
       <button class="subtab-btn" data-sub="apps" onclick="switchSubTab('launcher', 'apps')">Apps</button>
     </div>
 
-    <!-- Subtabs for Media (Trakt & Sports) -->
+    <!-- Subtabs for Media (Trakt, Sports & Stremio) -->
     <div class="subtabs-bar" data-parent="media">
       <button class="subtab-btn active" data-sub="trakt" onclick="switchSubTab('media', 'trakt')">Trakt</button>
       <button class="subtab-btn" data-sub="sports" onclick="switchSubTab('media', 'sports')">Sports</button>
+      <button class="subtab-btn" data-sub="stremio" onclick="switchSubTab('media', 'stremio')">Stremio Addons</button>
     </div>
 
     <!-- Subtabs for Storage -->
@@ -1887,6 +1905,42 @@ HTML_MASTER = """<!DOCTYPE html>
             </div>
           </div>
 
+          <!-- 3. LIVE INPUT LOG & EVENT STREAM -->
+          <div id="remote-view-log" class="remote-model-view" style="display:none; flex-direction:column; gap:12px; width:100%;">
+            <div class="card" style="width:100%;">
+              <div class="card-head">
+                <span class="card-title">Live Remote Input Log</span>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <button class="btn btn-sm btn-primary" id="btnLogStream" onclick="toggleInputLogStream()">Stream: ON</button>
+                  <button class="btn btn-sm" onclick="loadInputLog()">Refresh</button>
+                  <button class="btn btn-sm btn-danger" onclick="clearInputLog()">Clear</button>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; margin-bottom:8px;">
+                <input type="text" id="logFilterInput" class="text-input" style="padding:4px 10px; font-size:0.8rem;" placeholder="Filter log (e.g. DOWN, CONSUMED, TV_INPUT)..." oninput="filterInputLog()">
+              </div>
+              <div class="input-log-box" id="inputLogBox">Waiting for input events...</div>
+
+              <div style="margin-top:10px; padding-top:10px; border-top:1px solid #1c222d;">
+                <div style="font-size:0.75rem; color:var(--muted); font-weight:600; margin-bottom:6px;">QUICK INPUT TESTER</div>
+                <div class="grid-4" style="gap:6px;">
+                  <button class="btn btn-sm" onclick="testSendKey('UP')">▲ UP</button>
+                  <button class="btn btn-sm" onclick="testSendKey('DOWN')">▼ DOWN</button>
+                  <button class="btn btn-sm" onclick="testSendKey('LEFT')">◀ LEFT</button>
+                  <button class="btn btn-sm" onclick="testSendKey('RIGHT')">▶ RIGHT</button>
+                  <button class="btn btn-sm btn-primary" onclick="testSendKey('OK')">OK</button>
+                  <button class="btn btn-sm" onclick="testSendKey('BACK')">BACK</button>
+                  <button class="btn btn-sm" onclick="testSendKey('HOME')">HOME</button>
+                  <button class="btn btn-sm" onclick="testSendKey('INFO')">INFO</button>
+                  <button class="btn btn-sm" onclick="testSendKey('VOL_UP')">VOL +</button>
+                  <button class="btn btn-sm" onclick="testSendKey('VOL_DOWN')">VOL −</button>
+                  <button class="btn btn-sm" onclick="testSendKey('MUTE')">MUTE</button>
+                  <button class="btn btn-sm" onclick="testSendKey('SETTINGS')">SETTINGS</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
@@ -2023,6 +2077,84 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
+    <!-- ================= 5b. MEDIA -> STREMIO ADDONS ================= -->
+    <section class="tab-panel" id="panel-media-stremio">
+      <!-- Stremio Quick TV Controls -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Stremio TV Controls</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm btn-primary" onclick="stremioAppAction('launch')">Launch Stremio</button>
+            <button class="btn btn-sm" onclick="stremioAppAction('restart')">Restart Stremio</button>
+            <button class="btn btn-sm btn-danger" onclick="stremioAppAction('stop')">Force Stop</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Addon Cards -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Pengu</span>
+          <span class="badge badge-on">Provider</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--muted); margin-bottom:10px; font-family:monospace; word-break:break-all;">
+          https://pengu.uk/{"auth_token":"Qtzd3T1YGqZmMiApYJYe9bcP8oijf6OvNV7sYGEVOm4"}/manifest.json
+        </div>
+        <div class="grid-4" style="gap:8px;">
+          <button class="btn btn-sm btn-primary" onclick="installStremioAddon('stremio://pengu.uk/%7B%22auth_token%22%3A%22Qtzd3T1YGqZmMiApYJYe9bcP8oijf6OvNV7sYGEVOm4%22%7D/manifest.json')">⚡ Install on TV</button>
+          <button class="btn btn-sm" onclick="window.open('https://pengu.uk/', '_blank')">⚙ Configure</button>
+          <button class="btn btn-sm" onclick="copyManifestUrl('https://pengu.uk/%7B%22auth_token%22%3A%22Qtzd3T1YGqZmMiApYJYe9bcP8oijf6OvNV7sYGEVOm4%22%7D/manifest.json')">📋 Copy Manifest</button>
+          <button class="btn btn-sm" onclick="openWebStremio('https://pengu.uk/%7B%22auth_token%22%3A%22Qtzd3T1YGqZmMiApYJYe9bcP8oijf6OvNV7sYGEVOm4%22%7D/manifest.json')">🌐 Web Stremio</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">MyTrakt (ElfHosted)</span>
+          <span class="badge badge-on">Trakt Sync</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--muted); margin-bottom:10px; font-family:monospace; word-break:break-all;">
+          https://mytrakt.elfhosted.com/addon/f216e4ed-90c9-4b77-8bf8-58b72dfe50d1/manifest.json
+        </div>
+        <div class="grid-4" style="gap:8px;">
+          <button class="btn btn-sm btn-primary" onclick="installStremioAddon('stremio://mytrakt.elfhosted.com/addon/f216e4ed-90c9-4b77-8bf8-58b72dfe50d1/manifest.json')">⚡ Install on TV</button>
+          <button class="btn btn-sm" onclick="window.open('https://mytrakt.elfhosted.com/addon/f216e4ed-90c9-4b77-8bf8-58b72dfe50d1/configure', '_blank')">⚙ Configure</button>
+          <button class="btn btn-sm" onclick="copyManifestUrl('https://mytrakt.elfhosted.com/addon/f216e4ed-90c9-4b77-8bf8-58b72dfe50d1/manifest.json')">📋 Copy Manifest</button>
+          <button class="btn btn-sm" onclick="openWebStremio('https://mytrakt.elfhosted.com/addon/f216e4ed-90c9-4b77-8bf8-58b72dfe50d1/manifest.json')">🌐 Web Stremio</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">HighFly Sports</span>
+          <span class="badge badge-on">Live CFB & NFL</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--muted); margin-bottom:10px; font-family:monospace; word-break:break-all;">
+          https://sports.highfly.to/eyJpbmNsdWRlU3BvcnRzIjpbImFtZXJpY2FuLWZvb3RiYWxsIiwiYmFza2V0YmFsbCJdLCJpbmNsdWRlTGVhZ3VlcyI6WyJjb2xsZWdlLWZiIiwibmZsIl0sIm9ubHlMaXZlIjp0cnVlfQ/manifest.json
+        </div>
+        <div class="grid-4" style="gap:8px;">
+          <button class="btn btn-sm btn-primary" onclick="installStremioAddon('stremio://sports.highfly.to/eyJpbmNsdWRlU3BvcnRzIjpbImFtZXJpY2FuLWZvb3RiYWxsIiwiYmFza2V0YmFsbCJdLCJpbmNsdWRlTGVhZ3VlcyI6WyJjb2xsZWdlLWZiIiwibmZsIl0sIm9ubHlMaXZlIjp0cnVlfQ/manifest.json')">⚡ Install on TV</button>
+          <button class="btn btn-sm" onclick="window.open('https://sports.highfly.to/configure#eyJpbmNsdWRlU3BvcnRzIjpbImFtZXJpY2FuLWZvb3RiYWxsIiwiYmFza2V0YmFsbCJdLCJpbmNsdWRlTGVhZ3VlcyI6WyJjb2xsZWdlLWZiIiwibmZsIl0sIm9ubHlMaXZlIjp0cnVlfQ', '_blank')">⚙ Configure</button>
+          <button class="btn btn-sm" onclick="copyManifestUrl('https://sports.highfly.to/eyJpbmNsdWRlU3BvcnRzIjpbImFtZXJpY2FuLWZvb3RiYWxsIiwiYmFza2V0YmFsbCJdLCJpbmNsdWRlTGVhZ3VlcyI6WyJjb2xsZWdlLWZiIiwibmZsIl0sIm9ubHlMaXZlIjp0cnVlfQ/manifest.json')">📋 Copy Manifest</button>
+          <button class="btn btn-sm" onclick="openWebStremio('https://sports.highfly.to/eyJpbmNsdWRlU3BvcnRzIjpbImFtZXJpY2FuLWZvb3RiYWxsIiwiYmFza2V0YmFsbCJdLCJpbmNsdWRlTGVhZ3VlcyI6WyJjb2xsZWdlLWZiIiwibmZsIl0sIm9ubHlMaXZlIjp0cnVlfQ/manifest.json')">🌐 Web Stremio</button>
+        </div>
+      </div>
+
+      <!-- Custom Manifest Installer -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Install Custom Stremio Addon</span>
+        </div>
+        <div class="typing-box">
+          <input type="text" id="customStremioManifest" class="text-input" placeholder="https://.../manifest.json or stremio://..." onkeydown="if(event.key==='Enter') installCustomStremioAddon()">
+          <button class="btn btn-primary" onclick="installCustomStremioAddon()">Install on TV</button>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn btn-sm" onclick="openCustomWebStremio()">Open in Web Stremio</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ================= 6. STORAGE -> FILES ================= -->
     <section class="tab-panel" id="panel-storage-files">
       <div class="card">
@@ -2145,6 +2277,21 @@ HTML_MASTER = """<!DOCTYPE html>
     <section class="tab-panel" id="panel-system-setup">
 
       <div class="card">
+        <div class="card-head">
+          <span class="card-title">Projectivy TV Tools & Calibration</span>
+          <button class="btn btn-sm btn-primary" id="btnLauncherGuard" onclick="toggleLauncherGuard()">Launcher Guard: ON</button>
+        </div>
+        <div class="grid-3" style="gap:8px;">
+          <button class="btn" onclick="launchTool('tcl_factory')">TCL Factory Menu</button>
+          <button class="btn" onclick="launchTool('picture_settings')">Picture Settings</button>
+          <button class="btn" onclick="launchTool('audio_settings')">Audio Settings</button>
+          <button class="btn" onclick="launchTool('dev_options')">Developer Options</button>
+          <button class="btn" onclick="launchTool('accessibility')">Accessibility</button>
+          <button class="btn" onclick="launchTool('inputs')">Inputs Switcher</button>
+        </div>
+      </div>
+
+      <div class="card">
         <span class="card-title">Reboot</span>
         <div class="grid-3">
           <button class="btn" onclick="rebootTv('soft')">Soft Reboot</button>
@@ -2210,6 +2357,16 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function switchSubTab(mainTabId, subTabId) {
       if (mainTabId === 'remote' && (subTabId === 'compact' || !subTabId)) subTabId = 'tcl';
       activeSubTabs[mainTabId] = subTabId;
@@ -2224,7 +2381,14 @@ HTML_MASTER = """<!DOCTYPE html>
         document.querySelectorAll('.remote-model-view').forEach(v => v.style.display = 'none');
         const targetView = document.getElementById(`remote-view-${subTabId}`);
         if (targetView) targetView.style.display = 'flex';
+        if (subTabId === 'log') {
+          startInputLogStream();
+        } else {
+          stopInputLogStream();
+        }
         return;
+      } else {
+        stopInputLogStream();
       }
 
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -2244,6 +2408,191 @@ HTML_MASTER = """<!DOCTYPE html>
       if (mainTabId === 'storage' && subTabId === 'files') loadFiles(currentPath);
       if (mainTabId === 'system' && subTabId === 'debloat') loadPresetDebloat();
       if (mainTabId === 'system' && subTabId === 'health') loadHealth();
+    }
+
+    // Input Event Log Stream
+    let logStreamInterval = null;
+    let rawLogLines = [];
+
+    function startInputLogStream() {
+      if (logStreamInterval) clearInterval(logStreamInterval);
+      loadInputLog();
+      logStreamInterval = setInterval(loadInputLog, 1500);
+      const btn = document.getElementById('btnLogStream');
+      if (btn) { btn.textContent = 'Stream: ON'; btn.className = 'btn btn-sm btn-primary'; }
+    }
+
+    function stopInputLogStream() {
+      if (logStreamInterval) {
+        clearInterval(logStreamInterval);
+        logStreamInterval = null;
+      }
+      const btn = document.getElementById('btnLogStream');
+      if (btn) { btn.textContent = 'Stream: OFF'; btn.className = 'btn btn-sm'; }
+    }
+
+    function toggleInputLogStream() {
+      if (logStreamInterval) stopInputLogStream();
+      else startInputLogStream();
+    }
+
+    async function loadInputLog() {
+      try {
+        const res = await fetch('/api/input/log');
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.logs)) {
+          rawLogLines = data.logs;
+          renderInputLogs();
+        }
+      } catch (e) {
+        console.error('Failed to load input log', e);
+      }
+    }
+
+    function filterInputLog() {
+      renderInputLogs();
+    }
+
+    function renderInputLogs() {
+      const box = document.getElementById('inputLogBox');
+      if (!box) return;
+      const filter = (document.getElementById('logFilterInput')?.value || '').toLowerCase().trim();
+      let lines = rawLogLines;
+      if (filter) {
+        lines = lines.filter(l => l.toLowerCase().includes(filter));
+      }
+      if (lines.length === 0) {
+        box.innerHTML = '<span style="color:var(--muted);">No input events matching filter. Press buttons on your TV remote or the quick test pad below.</span>';
+        return;
+      }
+      box.innerHTML = lines.map(line => {
+        let color = '#94a3b8';
+        if (line.includes('CONSUMED')) color = '#4ade80';
+        else if (line.includes('PASSED') || line.includes('PASSTHROUGH')) color = '#38bdf8';
+        else if (line.includes('DROPPED') || line.includes('EATEN') || line.includes('TIMEOUT')) color = '#f87171';
+        else if (line.includes('[WEB]')) color = '#c084fc';
+        return `<div style="color:${color}; padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.03);">${escapeHtml(line)}</div>`;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function clearInputLog() {
+      try {
+        const res = await fetch('/api/input/log/clear', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          rawLogLines = [];
+          renderInputLogs();
+          showToast('Input log cleared');
+        }
+      } catch (e) {
+        showToast('Failed to clear log');
+      }
+    }
+
+    async function testSendKey(key) {
+      await sendKey(key);
+      setTimeout(loadInputLog, 250);
+    }
+
+    // Stremio Addons Management
+    async function installStremioAddon(url) {
+      showToast('Installing addon on TV...');
+      try {
+        const res = await fetch('/api/stremio/addon/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ manifest: url })
+        });
+        const data = await res.json();
+        if (data.ok) showToast('Install prompt opened on TV Stremio');
+        else showToast('Install error: ' + (data.error || 'Failed'));
+      } catch (e) {
+        showToast('Network error installing addon');
+      }
+    }
+
+    function copyManifestUrl(url) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url);
+        showToast('Manifest URL copied');
+      } else {
+        prompt('Copy Manifest URL:', url);
+      }
+    }
+
+    function openWebStremio(manifestUrl) {
+      const webUrl = `https://web.stremio.com/#/addons?addon=${encodeURIComponent(manifestUrl)}`;
+      window.open(webUrl, '_blank');
+    }
+
+    async function installCustomStremioAddon() {
+      const input = document.getElementById('customStremioManifest');
+      const url = input ? input.value.trim() : '';
+      if (!url) {
+        showToast('Please enter a manifest URL');
+        return;
+      }
+      await installStremioAddon(url);
+    }
+
+    function openCustomWebStremio() {
+      const input = document.getElementById('customStremioManifest');
+      const url = input ? input.value.trim() : '';
+      if (!url) {
+        showToast('Please enter a manifest URL');
+        return;
+      }
+      openWebStremio(url);
+    }
+
+    async function stremioAppAction(act) {
+      if (act === 'launch') {
+        await appAction('launch', 'com.stremio.one');
+      } else if (act === 'stop') {
+        await appAction('stop', 'com.stremio.one');
+      } else if (act === 'restart') {
+        await appAction('stop', 'com.stremio.one');
+        setTimeout(() => appAction('launch', 'com.stremio.one'), 800);
+      }
+    }
+
+    // Tools & Engineering Calibration
+    async function launchTool(toolName) {
+      showToast('Launching ' + toolName + '...');
+      try {
+        const res = await fetch('/api/tools/launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tool: toolName })
+        });
+        const data = await res.json();
+        if (data.ok) showToast('Opened on TV');
+        else showToast('Launch failed: ' + (data.error || 'Error'));
+      } catch (e) {
+        showToast('Failed to open tool');
+      }
+    }
+
+    let launcherGuardState = true;
+    async function toggleLauncherGuard() {
+      try {
+        const res = await fetch('/api/tools/launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tool: 'toggle_launcher_guard' })
+        });
+        const data = await res.json();
+        launcherGuardState = !!data.enabled;
+        const btn = document.getElementById('btnLauncherGuard');
+        if (btn) {
+          btn.textContent = 'Launcher Guard: ' + (launcherGuardState ? 'ON' : 'OFF');
+          btn.className = launcherGuardState ? 'btn btn-sm btn-primary' : 'btn btn-sm';
+        }
+        showToast('Launcher Guard: ' + (launcherGuardState ? 'ON' : 'OFF'));
+      } catch (e) {
+        showToast('Toggle failed');
+      }
     }
 
     function toggleTclNumpad() {
@@ -3203,6 +3552,81 @@ class WebRemoteServer:
             "username": "DhruvG85",
             "hidden": []
         }
+        self.web_input_events = collections.deque(maxlen=150)
+        self.launcher_guard_enabled = True
+
+    def record_web_input(self, key_name, is_long=False):
+        t_str = time.strftime("%H:%M:%S")
+        suffix = " (longpress)" if is_long else ""
+        self.web_input_events.append(f"{t_str} [WEB] Key Sent: {key_name}{suffix} -> TV")
+
+    def get_input_logs(self):
+        logs = []
+        # 1. Fetch TV log file if available
+        _, file_out = self.run_tv("run-as com.gathin.tvhome cat files/input_events.log 2>/dev/null", timeout=3.0)
+        if file_out and file_out.strip():
+            for line in file_out.splitlines():
+                if line.strip():
+                    logs.append(line.strip())
+
+        # 2. Fetch Android logcat TV_INPUT_LOG stream
+        _, logcat_out = self.run_tv("logcat -d -v time -s TV_INPUT_LOG:V -t 60", timeout=3.0)
+        if logcat_out and logcat_out.strip():
+            for line in logcat_out.splitlines():
+                if "TV_INPUT_LOG" in line:
+                    parts = line.split("): ", 1)
+                    clean_msg = parts[1].strip() if len(parts) > 1 else line.strip()
+                    time_part = line.split()[1] if len(line.split()) > 1 else ""
+                    formatted = f"{time_part} [TV] {clean_msg}" if time_part else f"[TV] {clean_msg}"
+                    if formatted not in logs:
+                        logs.append(formatted)
+
+        # 3. Add Web Remote injected events
+        for web_ev in list(self.web_input_events):
+            logs.append(web_ev)
+
+        return logs[-250:]
+
+    def clear_input_logs(self):
+        self.web_input_events.clear()
+        self.run_tv("run-as com.gathin.tvhome rm -f files/input_events.log 2>/dev/null; logcat -c", timeout=3.0)
+        return True
+
+    def install_stremio_addon(self, manifest_url):
+        clean_url = manifest_url.strip()
+        if clean_url.startswith("https://"):
+            clean_url = "stremio://" + clean_url[8:]
+        elif clean_url.startswith("http://"):
+            clean_url = "stremio://" + clean_url[7:]
+        elif not clean_url.startswith("stremio://"):
+            clean_url = "stremio://" + clean_url
+        cmd = f'am start -a android.intent.action.VIEW -d "{clean_url}" com.stremio.one'
+        err, out = self.run_tv(cmd)
+        return err == 0, out
+
+    def launch_tool(self, tool_id):
+        if tool_id == "tcl_factory":
+            cmd = "am start -n com.tcl.factory/com.tcl.factory.MainActivity 2>/dev/null || am start -n com.tcl.factory.view/.MainActivity 2>/dev/null || input keyevent 256"
+        elif tool_id == "picture_settings":
+            cmd = "am start -n com.android.tv.settings/.device.display.DisplayActivity 2>/dev/null || am start -a android.settings.DISPLAY_SETTINGS 2>/dev/null || am start -a android.intent.action.MAIN -n com.android.tv.settings/.MainSettings"
+        elif tool_id == "audio_settings":
+            cmd = "am start -a android.settings.SOUND_SETTINGS 2>/dev/null || am start -a android.intent.action.MAIN -n com.android.tv.settings/.MainSettings"
+        elif tool_id == "dev_options":
+            cmd = "am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS 2>/dev/null"
+        elif tool_id == "accessibility":
+            cmd = "am start -a android.settings.ACCESSIBILITY_SETTINGS 2>/dev/null"
+        elif tool_id == "inputs":
+            cmd = "am start -a android.media.tv.action.VIEW_INPUTS 2>/dev/null || input keyevent KEYCODE_TV_INPUT"
+        elif tool_id == "toggle_launcher_guard":
+            self.launcher_guard_enabled = not self.launcher_guard_enabled
+            val = "true" if self.launcher_guard_enabled else "false"
+            cmd = f'settings put secure enabled_accessibility_services com.gathin.tvhome/.RemoteKeyMapperService; settings put secure accessibility_enabled 1'
+            self.run_tv(cmd)
+            return True, f"Launcher guard set to {self.launcher_guard_enabled}"
+        else:
+            return False, "Unknown tool"
+        err, out = self.run_tv(cmd)
+        return err == 0, out
 
     def push_sports_settings(self, enabled_leagues):
         self.sports_enabled = enabled_leagues
@@ -3663,6 +4087,10 @@ def create_handler(server_ctx):
                 packages = server_ctx.get_preset_packages(brand)
                 return self._send(200, json.dumps({"ok": True, "brand": brand, "packages": packages}).encode("utf-8"))
 
+            if path == "/api/input/log":
+                logs = server_ctx.get_input_logs()
+                return self._send(200, json.dumps({"ok": True, "logs": logs, "count": len(logs)}).encode("utf-8"))
+
             self._send(404, b'{"error":"Not Found"}')
 
         def do_POST(self):
@@ -3733,6 +4161,7 @@ def create_handler(server_ctx):
             if path == "/api/key":
                 key_name = data.get("key", "").upper()
                 is_long = bool(data.get("long", False))
+                server_ctx.record_web_input(key_name, is_long)
                 code = KEYCODES.get(key_name)
                 if code is None:
                     return self._send(400, b'{"error":"Unknown key"}')
@@ -3872,6 +4301,25 @@ def create_handler(server_ctx):
                 cmd = data.get("cmd", "").strip()
                 err, out = server_ctx.run_tv(cmd, timeout=60.0)
                 return self._send(200 if err == 0 else 500, json.dumps({"ok": err == 0, "output": out}).encode("utf-8"))
+
+            if path == "/api/input/log/clear":
+                server_ctx.clear_input_logs()
+                return self._send(200, b'{"ok":true}')
+
+            if path == "/api/stremio/addon/install":
+                manifest = data.get("manifest", "").strip()
+                if not manifest:
+                    return self._send(400, b'{"error":"Missing manifest"}')
+                ok, out = server_ctx.install_stremio_addon(manifest)
+                return self._send(200 if ok else 500, json.dumps({"ok": ok, "output": out}).encode("utf-8"))
+
+            if path == "/api/tools/launch":
+                tool = data.get("tool", "").strip()
+                if not tool:
+                    return self._send(400, b'{"error":"Missing tool"}')
+                ok, out = server_ctx.launch_tool(tool)
+                enabled = getattr(server_ctx, "launcher_guard_enabled", True)
+                return self._send(200 if ok else 500, json.dumps({"ok": ok, "output": out, "enabled": enabled}).encode("utf-8"))
 
             self._send(404, b'{"error":"Not Found"}')
 

@@ -9,10 +9,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
+import android.util.Log;
 import android.widget.Toast;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * System-wide hardware remote button remapper.
@@ -40,9 +44,6 @@ public class RemoteKeyMapperService extends AccessibilityService {
     private static volatile KeyCaptureListener activeCaptureListener = null;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    public static void setKeyCaptureListener(KeyCaptureListener listener) {
-        activeCaptureListener = listener;
-    }
 
     public static String getMapping(Context ctx, int keyCode) {
         SharedPreferences sp = ctx.getSharedPreferences(PREFS_REMAP, MODE_PRIVATE);
@@ -80,10 +81,30 @@ public class RemoteKeyMapperService extends AccessibilityService {
     }
 
     private GamepadPassthrough gamepads;
+    private final Set<Integer> consumedDownKeyCodes = Collections.synchronizedSet(new HashSet<>());
+    private static Runnable captureTimeoutRunnable = null;
+
+    public static synchronized void setKeyCaptureListener(KeyCaptureListener listener) {
+        activeCaptureListener = listener;
+        if (captureTimeoutRunnable != null) {
+            new Handler(Looper.getMainLooper()).removeCallbacks(captureTimeoutRunnable);
+            captureTimeoutRunnable = null;
+        }
+        if (listener != null) {
+            captureTimeoutRunnable = () -> {
+                Log.w("TV_INPUT_LOG", "Key capture listener timed out after 15s - clearing to prevent key eating");
+                activeCaptureListener = null;
+                captureTimeoutRunnable = null;
+            };
+            new Handler(Looper.getMainLooper()).postDelayed(captureTimeoutRunnable, 15000);
+        }
+    }
 
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        InputLogBuffer.init(getFilesDir());
+        Log.i("TV_INPUT_LOG", "RemoteKeyMapperService connected and InputLogBuffer active");
         gamepads = new GamepadPassthrough(this);
         gamepads.start();
     }
@@ -99,6 +120,24 @@ public class RemoteKeyMapperService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (event == null) return;
+        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            CharSequence pkg = event.getPackageName();
+            if (pkg != null) {
+                String pkgStr = pkg.toString();
+                // Projectivy-style launcher guard: keep custom launcher active
+                if ("com.google.android.apps.tv.launcherx".equals(pkgStr) || "com.google.android.tungsten.setupwraith".equals(pkgStr)) {
+                    SharedPreferences sp = getSharedPreferences("tvhome_launcher_settings", MODE_PRIVATE);
+                    boolean override = sp.getBoolean("override_stock_launcher", true);
+                    if (override) {
+                        InputLogBuffer.log(0, "LAUNCHER_OVERRIDE", 0, 0, "Intercepted " + pkgStr + ", keeping Clean TV Launcher active", "AccessibilityService", true);
+                        Intent home = new Intent(this, MainActivity.class);
+                        home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        startActivity(home);
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -107,25 +146,43 @@ public class RemoteKeyMapperService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
-        if (event.getAction() != KeyEvent.ACTION_DOWN) {
+        if (event == null) return false;
+        int action = event.getAction();
+        int keyCode = event.getKeyCode();
+        int repeat = event.getRepeatCount();
+        String keyName = friendlyKeyName(keyCode);
+        String source = (GamepadPassthrough.isGamepad(event.getSource()) ||
+                (event.getDevice() != null && GamepadPassthrough.isGamepad(event.getDevice().getSources()))) ? "Gamepad" : "Remote";
+
+        // Handle ACTION_UP to prevent eaten/mismatched key releases
+        if (action == KeyEvent.ACTION_UP) {
+            if (consumedDownKeyCodes.remove(keyCode)) {
+                InputLogBuffer.log(keyCode, keyName, 1, repeat, "CONSUMED (Matching UP)", source, true);
+                return true;
+            }
+            InputLogBuffer.log(keyCode, keyName, 1, repeat, "PASSED (UP)", source, false);
+            return false;
+        }
+
+        if (action != KeyEvent.ACTION_DOWN) {
+            InputLogBuffer.log(keyCode, keyName, action, repeat, "PASSED (Non-down action)", source, false);
             return false;
         }
 
         // Pass game controller inputs straight through so games have zero-latency raw button access
-        if (GamepadPassthrough.isGamepad(event.getSource()) ||
-            (event.getDevice() != null && GamepadPassthrough.isGamepad(event.getDevice().getSources()))) {
+        if ("Gamepad".equals(source)) {
+            InputLogBuffer.log(keyCode, keyName, 0, repeat, "PASSED (Gamepad passthrough)", source, false);
             return false;
         }
 
-        int keyCode = event.getKeyCode();
-
-        // Do not intercept or remap D-Pad navigation, system keys, game controller, or media playback buttons
+        // Do not intercept or remap D-Pad navigation, system keys, or media playback buttons
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP ||
             keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
             keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
             keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
             keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
             keyCode == KeyEvent.KEYCODE_ENTER ||
+            keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER ||
             keyCode == KeyEvent.KEYCODE_BACK ||
             keyCode == KeyEvent.KEYCODE_HOME ||
             keyCode == KeyEvent.KEYCODE_SETTINGS ||
@@ -144,27 +201,34 @@ public class RemoteKeyMapperService extends AccessibilityService {
             keyCode == KeyEvent.KEYCODE_MEDIA_RECORD ||
             keyCode == KeyEvent.KEYCODE_MEDIA_AUDIO_TRACK ||
             keyCode == KeyEvent.KEYCODE_CAPTIONS) {
+            InputLogBuffer.log(keyCode, keyName, 0, repeat, "PASSED (Navigation / System Key)", source, false);
             return false;
         }
 
         // Fix hardware TV Inputs button on remote so it opens Inputs menu from any app or HDMI
         if (keyCode == KeyEvent.KEYCODE_TV_INPUT || keyCode == 178) {
+            consumedDownKeyCodes.add(keyCode);
             launchTarget(ACTION_INPUTS);
+            InputLogBuffer.log(keyCode, keyName, 0, repeat, "CONSUMED (Triggered Inputs Switcher)", source, true);
             return true;
         }
 
-        // Support the "123" virtual remote button (WINDOW 171, INFO 165, or 78)
-        if (keyCode == KeyEvent.KEYCODE_WINDOW || keyCode == 171 || keyCode == 78) {
+        // Support the "123" virtual remote button (WINDOW 171)
+        if (keyCode == KeyEvent.KEYCODE_WINDOW || keyCode == 171) {
             String mapped = getMapping(this, keyCode);
             if (mapped != null && !mapped.isEmpty() && !"NONE".equals(mapped)) {
+                consumedDownKeyCodes.add(keyCode);
                 launchTarget(mapped);
+                InputLogBuffer.log(keyCode, keyName, 0, repeat, "CONSUMED (123 -> " + mapped + ")", source, true);
                 return true;
             }
+            consumedDownKeyCodes.add(keyCode);
             launchTarget(ACTION_INPUTS);
+            InputLogBuffer.log(keyCode, keyName, 0, repeat, "CONSUMED (123 -> Inputs Menu)", source, true);
             return true;
         }
 
-        // Do not intercept native Color Buttons so they always pass to IPTV
+        // Do not intercept native Color Buttons so they always pass to IPTV unless explicitly remapped
         if (keyCode == KeyEvent.KEYCODE_PROG_RED || keyCode == 183 ||
             keyCode == KeyEvent.KEYCODE_PROG_GREEN || keyCode == 184 ||
             keyCode == KeyEvent.KEYCODE_PROG_YELLOW || keyCode == 185 ||
@@ -172,6 +236,7 @@ public class RemoteKeyMapperService extends AccessibilityService {
             SharedPreferences sp = getSharedPreferences(PREFS_REMAP, MODE_PRIVATE);
             String saved = sp.getString(KEY_PREFIX + keyCode, null);
             if (saved == null || saved.isEmpty()) {
+                InputLogBuffer.log(keyCode, keyName, 0, repeat, "PASSED (Unmapped Color Key)", source, false);
                 return false; // Always pass through to IPTV!
             }
         }
@@ -187,18 +252,24 @@ public class RemoteKeyMapperService extends AccessibilityService {
                         activeCaptureListener.onKeyCaptured(capturedCode, capturedName);
                     }
                 });
+                consumedDownKeyCodes.add(keyCode);
+                InputLogBuffer.log(keyCode, keyName, 0, repeat, "CONSUMED (Captured for Testing/Remap)", source, true);
                 return true; // Consume so the TV doesn't navigate away while capturing
             }
+            InputLogBuffer.log(keyCode, keyName, 0, repeat, "PASSED (Back during capture)", source, false);
             return false;
         }
 
         // 2. Check for configured mapping
         String target = getMapping(this, keyCode);
         if (target != null && !target.isEmpty() && !"NONE".equals(target)) {
+            consumedDownKeyCodes.add(keyCode);
             launchTarget(target);
+            InputLogBuffer.log(keyCode, keyName, 0, repeat, "CONSUMED (Mapped -> " + target + ")", source, true);
             return true; // Completely suppress default TV action!
         }
 
+        InputLogBuffer.log(keyCode, keyName, 0, repeat, "PASSED (No mapping)", source, false);
         return super.onKeyEvent(event);
     }
 
