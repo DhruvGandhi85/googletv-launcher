@@ -1,40 +1,15 @@
 #!/usr/bin/env python3
-"""Google TV Web Remote & Interactive Master Dashboard.
+"""Google TV Web Remote & Interactive Master Control Center.
 
-A complete browser-based control center synthesizing ALL features from:
-  1. HoangTran0410/tv-remote:
-     - 2-Column Responsive Remote (Click-to-Tap Screen Mirror + Tactile Remote)
-     - Interactive Touch Passthrough (clicking screen sends `input tap X Y`)
-     - D-Pad with central OK button and long-press support
-     - Volume (+, Mute, -) and Channel (+, -) pills
-     - Media transport (Play/Pause, Stop, Rewind, Fast Forward, Prev, Next)
-     - 4 Color keys (Red, Green, Yellow, Blue) and 12-button Numeric Pad (0-9, Info, Guide)
-     - Real-time text typing stream & URL / Deep Link launcher
-     - Sleep timer countdown (15m, 30m, 45m, 60m, 90m, 120m) & Night Screen-Off
-     - TV storage file browser (/sdcard) with upload, download, delete, and open on TV
-     - Real-time CPU, RAM, and Storage meters with percentage bars
-     - Wi-Fi telemetry (SSID, Signal RSSI, Link Speed, Frequency), Uptime, Thermal level
-     - Interactive ADB Shell Command Console with command history
-
-  2. Pagamase/cleanyourtv-panel:
-     - Interactive Visual TV Home Screen Layout Builder
-     - Visual draggable / reorderable Dock Apps, Grid Apps, and Hidden Apps zones
-     - Inline App Renaming modal (`app_labels`)
-     - Launcher Appearance Options: Columns (3-8), Rows below dock (0-3), Greeting Name ("Dhruv"),
-       Clock stats toggle (CPU/RAM telemetry), Reduced motion, Sky intensity slider, Round buttons, Ambient glow
-     - "Push to TV" button with instant launcher reload and verified screen capture
-     - Bilingual UI switch (English / Español)
-
-  3. gethari/clean-your-tv-companion:
-     - Multi-brand Debloat Presets: TCL Google TV, Xiaomi/Redmi, Sony BRAVIA, Hisense, Philips, Common Android TV
-     - Plain-English safety assessment & component impact descriptions
-     - Categorization: Protected/Kept, Already Disabled, Available to Review
-     - 1-click "Apply Safe Debloat", "Restore All", and per-package toggles
-     - Wallpaper Photo Staging: upload custom wallpaper photo directly to TV background
-     - Deep Hardware Diagnostic Matrix (Physical vs Override resolution, Display density, Partition storage)
-
-Usage:
-    python3 tools/web_remote.py [--port 8765] [--tv 192.168.0.87]
+Consolidated tab/subtab architecture following Jakub Krehel's "Less is More" minimalism:
+- English-only interface
+- Tailored specifically for Google TV
+- No decorative eyebrow badges, kicker chips, or explanatory microcopy
+- Clean Apple-style layout: primary tabs consolidated with intuitive subtabs
+  - Remote: Keypad, Screen, Input
+  - Launcher: Layout, Apps
+  - Storage: Files, Wallpaper
+  - System: Health, Debloat, Tools
 """
 
 import argparse
@@ -97,79 +72,58 @@ KEYCODES = {
     "NUM_9": 16,
 }
 
-# Curated debloat presets by brand (gethari/clean-your-tv-companion)
+# Curated Google TV debloat presets
 PRESETS = {
     "tcl": {
-        "name": "TCL Google TV (QM6K Pro / G08)",
+        "name": "TCL Google TV",
         "packages": [
-            {"pkg": "com.tcl.tv.plus", "name": "TCL TV+", "cat": "Optional Apps", "impact": "Removes access to TCL free streaming channels.", "safe": True},
-            {"pkg": "com.tcl.channelplus", "name": "TCL Channel Plus", "cat": "Optional Apps", "impact": "TCL channel aggregator service.", "safe": True},
-            {"pkg": "com.tcl.tv.tclhome_passive", "name": "TCL Home Passive Service", "cat": "Viewing Data", "impact": "Background telemetry and partner promotions.", "safe": True},
-            {"pkg": "com.tcl.partnercustomizer", "name": "TCL Partner Customizer", "cat": "Home Recommendations", "impact": "Promotional banners in stock launcher.", "safe": True},
-            {"pkg": "com.tcl.interactive", "name": "TCL Interactive Telemetry", "cat": "Diagnostics", "impact": "Collects viewing analytics and telemetry.", "safe": True},
-            {"pkg": "com.tcl.smartlink.core", "name": "TCL SmartLink Core", "cat": "Optional Apps", "impact": "TCL smart home integration link.", "safe": True},
-            {"pkg": "com.tcl.logkit", "name": "TCL LogKit", "cat": "Diagnostics", "impact": "Diagnostic log collection agent.", "safe": True},
-            {"pkg": "com.tcl.ttvs", "name": "TCL Viewing Data Services", "cat": "Viewing Data", "impact": "T-Cast and viewing analytics collector.", "safe": True},
-            {"pkg": "com.tcl.messagebox", "name": "TCL Message Box", "cat": "Optional Apps", "impact": "Push notification box for TCL marketing messages.", "safe": True},
-            {"pkg": "com.tcl.usercenter", "name": "TCL User Center", "cat": "Diagnostics", "impact": "TCL account tracking and telemetry.", "safe": True},
-            {"pkg": "com.tcl.useragreement", "name": "TCL User Agreement Prompter", "cat": "Diagnostics", "impact": "Repeated user agreement dialogs.", "safe": True},
-            {"pkg": "com.tcl.exhibit", "name": "TCL Retail Exhibit", "cat": "Store Mode", "impact": "Retail store demo mode overlay.", "safe": True},
-            {"pkg": "com.tcl.esticker", "name": "TCL E-Sticker Demo", "cat": "Store Mode", "impact": "Store sticker features.", "safe": True},
-            {"pkg": "com.tcl.browser", "name": "TCL Built-in Browser", "cat": "Optional Apps", "impact": "Built-in browser. Keep if you browse websites with it.", "safe": True},
-            {"pkg": "com.tcl.ocean.instructions", "name": "TCL Ocean Instructions", "cat": "Optional Apps", "impact": "Electronic instruction manual app.", "safe": True},
-            {"pkg": "com.tcl.repairguide", "name": "TCL Repair Guide", "cat": "Optional Apps", "impact": "Diagnostic repair guide.", "safe": True},
-            {"pkg": "com.tcl.smartalexa", "name": "TCL Alexa Integration", "cat": "Optional Apps", "impact": "Alexa integration components.", "safe": True},
-            {"pkg": "com.tcl.UpdatePeripheral", "name": "TCL Update Peripheral Agent", "cat": "Diagnostics", "impact": "Peripheral update checker.", "safe": True},
-            {"pkg": "com.tcl.hearaid", "name": "TCL HearAid Service", "cat": "Optional Apps", "impact": "Hearing aid accessibility background service.", "safe": True},
-            {"pkg": "com.tcl.suspension", "name": "TCL Suspension Widget", "cat": "Optional Apps", "impact": "Floating overlay widget.", "safe": True},
-            {"pkg": "com.google.android.feedback", "name": "Google Play Feedback", "cat": "Diagnostics", "impact": "Feedback reporting service.", "safe": True},
-            {"pkg": "com.android.tv.feedbackconsent", "name": "TV Feedback Consent", "cat": "Diagnostics", "impact": "Google TV feedback consent component.", "safe": True},
-            {"pkg": "android.autoinstalls.config.google.gtvpai", "name": "Google PAI Auto-Installer", "cat": "Optional Apps", "impact": "Partner app auto-installer.", "safe": True},
-            {"pkg": "com.google.android.apps.tv.launcherx", "name": "Stock Google TV Launcher", "cat": "Home Recommendations", "impact": "Ad-heavy stock launcher. Safe to disable with replacement home.", "safe": True},
-            {"pkg": "com.google.android.tungsten.setupwraith", "name": "Google TV Setup Wraith", "cat": "Optional Apps", "impact": "Setup wizard component.", "safe": True},
-            {"pkg": "com.google.android.apps.tv.dreamx", "name": "Google TV Ambient Backdrop", "cat": "Optional Apps", "impact": "Google TV screensaver.", "safe": True},
-        ]
-    },
-    "xiaomi": {
-        "name": "Xiaomi / Redmi Android TV (Mi TV 4A)",
-        "packages": [
-            {"pkg": "com.miui.tv.analytics", "name": "Xiaomi TV Analytics", "cat": "Viewing Data", "impact": "Disables analytics and viewing telemetry.", "safe": True},
-            {"pkg": "com.xiaomi.statistic", "name": "Xiaomi Statistics", "cat": "Viewing Data", "impact": "Disables statistics reporter.", "safe": True},
-            {"pkg": "com.mitv.tvhome.atv", "name": "PatchWall Content", "cat": "Home Recommendations", "impact": "PatchWall promotional rows.", "safe": True},
-            {"pkg": "com.xiaomi.mimusic2", "name": "Mi Music", "cat": "Optional Apps", "impact": "Built-in Mi Music player.", "safe": True},
+            {"pkg": "com.tcl.tv.plus", "name": "TCL TV+", "cat": "Streaming", "impact": "TCL streaming channels", "safe": True},
+            {"pkg": "com.tcl.channelplus", "name": "TCL Channel Plus", "cat": "Streaming", "impact": "Channel aggregator", "safe": True},
+            {"pkg": "com.tcl.tv.tclhome_passive", "name": "TCL Home Passive", "cat": "Telemetry", "impact": "Background telemetry and partner promos", "safe": True},
+            {"pkg": "com.tcl.partnercustomizer", "name": "TCL Partner Customizer", "cat": "Promotions", "impact": "Promotional banners in stock UI", "safe": True},
+            {"pkg": "com.tcl.interactive", "name": "TCL Interactive Telemetry", "cat": "Telemetry", "impact": "Viewing analytics collector", "safe": True},
+            {"pkg": "com.tcl.smartlink.core", "name": "TCL SmartLink Core", "cat": "Optional", "impact": "Smart home link service", "safe": True},
+            {"pkg": "com.tcl.logkit", "name": "TCL LogKit", "cat": "Diagnostics", "impact": "Diagnostic log agent", "safe": True},
+            {"pkg": "com.tcl.ttvs", "name": "TCL Viewing Services", "cat": "Telemetry", "impact": "T-Cast viewing tracker", "safe": True},
+            {"pkg": "com.tcl.messagebox", "name": "TCL Message Box", "cat": "Notifications", "impact": "Marketing push notification agent", "safe": True},
+            {"pkg": "com.tcl.usercenter", "name": "TCL User Center", "cat": "Diagnostics", "impact": "Account tracking service", "safe": True},
+            {"pkg": "com.tcl.useragreement", "name": "TCL User Agreement", "cat": "Diagnostics", "impact": "User agreement prompt loop", "safe": True},
+            {"pkg": "com.tcl.exhibit", "name": "TCL Retail Exhibit", "cat": "Store Mode", "impact": "Store demo overlay", "safe": True},
+            {"pkg": "com.tcl.esticker", "name": "TCL E-Sticker", "cat": "Store Mode", "impact": "Store sticker component", "safe": True},
+            {"pkg": "com.tcl.browser", "name": "TCL Built-in Browser", "cat": "Optional", "impact": "Stock browser", "safe": True},
+            {"pkg": "com.tcl.ocean.instructions", "name": "TCL Ocean Instructions", "cat": "Optional", "impact": "Electronic instruction manual", "safe": True},
+            {"pkg": "com.tcl.repairguide", "name": "TCL Repair Guide", "cat": "Optional", "impact": "Diagnostic repair guide", "safe": True},
+            {"pkg": "com.tcl.smartalexa", "name": "TCL Alexa Integration", "cat": "Optional", "impact": "Alexa integration components", "safe": True},
+            {"pkg": "com.tcl.UpdatePeripheral", "name": "TCL Peripheral Update", "cat": "Diagnostics", "impact": "Peripheral update agent", "safe": True},
+            {"pkg": "com.tcl.hearaid", "name": "TCL HearAid Service", "cat": "Optional", "impact": "Hearing aid accessibility background service", "safe": True},
+            {"pkg": "com.tcl.suspension", "name": "TCL Suspension Widget", "cat": "Optional", "impact": "Floating overlay widget", "safe": True},
+            {"pkg": "com.google.android.feedback", "name": "Google Play Feedback", "cat": "Diagnostics", "impact": "Feedback reporting service", "safe": True},
+            {"pkg": "com.android.tv.feedbackconsent", "name": "TV Feedback Consent", "cat": "Diagnostics", "impact": "Feedback consent prompt component", "safe": True},
+            {"pkg": "android.autoinstalls.config.google.gtvpai", "name": "Google PAI Auto-Installer", "cat": "Optional", "impact": "Partner app auto-installer", "safe": True},
+            {"pkg": "com.google.android.apps.tv.launcherx", "name": "Stock Google TV Launcher", "cat": "Launcher", "impact": "Ad-heavy stock launcher", "safe": True},
+            {"pkg": "com.google.android.tungsten.setupwraith", "name": "Google TV Setup Wraith", "cat": "Optional", "impact": "Setup wizard component", "safe": True},
+            {"pkg": "com.google.android.apps.tv.dreamx", "name": "Google TV Ambient Backdrop", "cat": "Optional", "impact": "Google TV screensaver", "safe": True},
         ]
     },
     "sony": {
-        "name": "Sony BRAVIA Google TV (KD-55X85J)",
+        "name": "Sony BRAVIA Google TV",
         "packages": [
-            {"pkg": "tv.samba.ssm", "name": "Samba TV Viewing Recognition", "cat": "Viewing Data", "impact": "Recognizes on-screen content for advertising.", "safe": True},
-            {"pkg": "tv.samba.ssm.ui", "name": "Samba TV Controls", "cat": "Viewing Data", "impact": "Companion controls for Samba TV telemetry.", "safe": True},
-            {"pkg": "com.sonyericsson.idd.agent", "name": "Sony Usage-Data Agent", "cat": "Diagnostics", "impact": "Disables usage data diagnostic agent.", "safe": True},
-            {"pkg": "com.sony.dtv.promos", "name": "Sony Promotions", "cat": "Home Recommendations", "impact": "Promotional banner component.", "safe": True},
-        ]
-    },
-    "hisense": {
-        "name": "Hisense Android TV (HiSmartTV A4)",
-        "packages": [
-            {"pkg": "com.hisense.app.logreport", "name": "Hisense Log Reports", "cat": "Diagnostics", "impact": "Collects diagnostic and usage reports.", "safe": True},
-            {"pkg": "com.hisense.storemode", "name": "Hisense Store Mode", "cat": "Store Mode", "impact": "Store display mode demo.", "safe": True},
-            {"pkg": "com.seraphic.browser", "name": "Hisense Browser", "cat": "Optional Apps", "impact": "Built-in browser.", "safe": True},
-        ]
-    },
-    "philips": {
-        "name": "Philips Google TV (R8G)",
-        "packages": [
-            {"pkg": "tv.anoki.acr.anokiacroptin", "name": "Anoki Viewing Recognition", "cat": "Viewing Data", "impact": "Recognizes content on screen for ads.", "safe": True},
-            {"pkg": "com.apps.esticker3", "name": "Philips Retail Sticker", "cat": "Store Mode", "impact": "Retail display overlay sticker.", "safe": True},
-            {"pkg": "com.realtek.leanbacklauncher.partnercustomizer", "name": "Partner Recommendations", "cat": "Home Recommendations", "impact": "Custom partner content on home.", "safe": True},
+            {"pkg": "tv.samba.ssm", "name": "Samba TV ACR", "cat": "Telemetry", "impact": "On-screen content recognition for ads", "safe": True},
+            {"pkg": "tv.samba.ssm.ui", "name": "Samba TV Controls", "cat": "Telemetry", "impact": "Samba TV companion telemetry", "safe": True},
+            {"pkg": "com.sonyericsson.idd.agent", "name": "Sony Usage-Data Agent", "cat": "Diagnostics", "impact": "Usage data diagnostic reporting", "safe": True},
+            {"pkg": "com.sony.dtv.promos", "name": "Sony Promotions", "cat": "Promotions", "impact": "Promotional banner component", "safe": True},
+            {"pkg": "com.google.android.feedback", "name": "Google Feedback", "cat": "Diagnostics", "impact": "Feedback reporter", "safe": True},
+            {"pkg": "com.google.android.apps.tv.launcherx", "name": "Stock Google TV Launcher", "cat": "Launcher", "impact": "Stock ad launcher", "safe": True},
         ]
     },
     "common": {
-        "name": "Android TV / Google TV (Common)",
+        "name": "Google TV (Common)",
         "packages": [
-            {"pkg": "com.google.android.feedback", "name": "Google Feedback", "cat": "Diagnostics", "impact": "Stops sending feedback reports.", "safe": True},
-            {"pkg": "com.android.tv.feedbackconsent", "name": "TV Feedback Consent", "cat": "Diagnostics", "impact": "Feedback consent prompt component.", "safe": True},
-            {"pkg": "com.google.android.play.games", "name": "Google Play Games", "cat": "Optional Apps", "impact": "Play Games sign-in and cloud saves.", "safe": True},
+            {"pkg": "com.google.android.feedback", "name": "Google Feedback", "cat": "Diagnostics", "impact": "Telemetry and feedback service", "safe": True},
+            {"pkg": "com.android.tv.feedbackconsent", "name": "TV Feedback Consent", "cat": "Diagnostics", "impact": "Consent prompt dialog component", "safe": True},
+            {"pkg": "com.google.android.play.games", "name": "Google Play Games", "cat": "Optional", "impact": "Play Games sign-in & saves", "safe": True},
+            {"pkg": "com.google.android.apps.tv.launcherx", "name": "Stock Google TV Launcher", "cat": "Launcher", "impact": "Stock launcher recommendations", "safe": True},
+            {"pkg": "com.google.android.apps.tv.dreamx", "name": "Google TV Screensaver", "cat": "Optional", "impact": "Ambient backdrop screensaver", "safe": True},
         ]
     }
 }
@@ -214,22 +168,21 @@ HTML_MASTER = """<!DOCTYPE html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>TV Remote & Master Control Center</title>
+  <title>Google TV Controller</title>
   <style>
     :root {
-      --bg: #0c0e12;
-      --card: #151921;
-      --card-sub: #1e232e;
-      --card-border: #242a36;
+      --bg: #090a0f;
+      --card: #12151c;
+      --card-sub: #181d26;
+      --card-border: #1e2430;
       --ink: #f0f3f6;
       --muted: #8c96a5;
       --accent: #2f6df6;
       --accent-hover: #3b82f6;
-      --accent-glow: rgba(47, 109, 246, 0.25);
       --danger: #ef4444;
       --success: #10b981;
       --warning: #f59e0b;
-      --radius: 14px;
+      --radius: 12px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
@@ -242,32 +195,29 @@ HTML_MASTER = """<!DOCTYPE html>
       align-items: center;
       padding: 14px 12px 64px;
     }
+
     header {
       width: 100%;
-      max-width: 1240px;
+      max-width: 1100px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       padding: 0 4px;
-      flex-wrap: wrap;
-      gap: 10px;
     }
     .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
       font-weight: 700;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       letter-spacing: -0.01em;
+      color: var(--ink);
     }
     .chips {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     .chip {
-      font-size: 0.74rem;
+      font-size: 0.76rem;
       padding: 4px 10px;
       border-radius: 999px;
       background: rgba(16, 185, 129, 0.12);
@@ -293,52 +243,72 @@ HTML_MASTER = """<!DOCTYPE html>
       background: var(--danger);
       box-shadow: 0 0 6px var(--danger);
     }
-    .lang-btn {
-      background: var(--card-sub);
-      border: 1px solid var(--card-border);
-      color: var(--ink);
-      font-size: 0.76rem;
-      font-weight: 600;
-      border-radius: 8px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
 
-    /* Tabs Bar */
-    nav.tabs {
+    /* Primary Navigation Tabs */
+    .nav-container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    nav.main-tabs {
       display: flex;
       width: 100%;
-      max-width: 1240px;
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 4px;
-      margin-bottom: 16px;
-      overflow-x: auto;
       gap: 4px;
     }
-    nav.tabs::-webkit-scrollbar { display: none; }
-    .tab-btn {
+    .main-tab-btn {
       flex: 1;
-      min-width: 80px;
       background: transparent;
       border: none;
       color: var(--muted);
-      padding: 10px 8px;
-      font-size: 0.83rem;
+      padding: 9px 8px;
+      font-size: 0.86rem;
       font-weight: 500;
       border-radius: 9px;
       cursor: pointer;
-      white-space: nowrap;
       transition: all 0.15s ease;
       text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
     }
-    .tab-btn.active {
-      background: #252c38;
+    .main-tab-btn.active {
+      background: #202734;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* Subtabs Bar */
+    .subtabs-bar {
+      display: none;
+      width: 100%;
+      background: var(--card-sub);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .subtabs-bar.active {
+      display: flex;
+    }
+    .subtab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 7px 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .subtab-btn.active {
+      background: #2a3344;
       color: #fff;
       font-weight: 600;
     }
@@ -346,31 +316,18 @@ HTML_MASTER = """<!DOCTYPE html>
     /* Main Container */
     main {
       width: 100%;
-      max-width: 1240px;
+      max-width: 1100px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
     .tab-panel {
       display: none;
       width: 100%;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
     .tab-panel.active { display: flex; }
-
-    /* Remote Tab: Desktop 2-Column Grid */
-    .remote-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
-      align-items: start;
-    }
-    @media (min-width: 900px) {
-      .remote-grid {
-        grid-template-columns: minmax(0, 1.35fr) 380px;
-      }
-    }
 
     /* Cards */
     .card {
@@ -390,292 +347,372 @@ HTML_MASTER = """<!DOCTYPE html>
       gap: 8px;
     }
     .card-title {
-      font-size: 0.76rem;
+      font-size: 0.78rem;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       color: var(--muted);
       font-weight: 700;
     }
 
     /* Buttons */
-    button.btn {
-      background: #1c222c;
-      border: 1px solid #2a323f;
+    .btn {
+      background: #1e2430;
+      border: 1px solid #2a3344;
       color: var(--ink);
-      font-size: 0.88rem;
-      font-weight: 500;
-      border-radius: 11px;
-      padding: 11px 14px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      border-radius: 9px;
+      padding: 9px 14px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
       user-select: none;
-      transition: background 0.1s, transform 0.08s, border-color 0.1s;
+      transition: all 0.15s ease;
     }
-    button.btn:active {
-      background: #293240;
-      transform: scale(0.97);
-      border-color: var(--accent);
-    }
-    button.btn-primary {
+    .btn:hover { background: #262e3d; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
       background: var(--accent);
-      border-color: #60a5fa;
+      border-color: var(--accent);
       color: #fff;
-      font-weight: 600;
     }
-    button.btn-primary:active { background: var(--accent-hover); }
-    button.btn-danger {
-      color: #fca5a5;
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.18);
       border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
     }
-    button.btn-danger:active { background: rgba(239, 68, 68, 0.2); }
-    button.btn-sm { padding: 6px 12px; font-size: 0.76rem; border-radius: 8px; }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.76rem;
+      border-radius: 7px;
+    }
 
-    /* D-Pad Controller */
+    /* Grids */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .grid-6 { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+
+    /* Remote D-Pad */
+    .remote-wrap {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+    .remote-box {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
     .dpad-container {
       position: relative;
       width: 220px;
       height: 220px;
-      margin: 8px auto;
-    }
-    .dpad-btn {
-      position: absolute;
-      background: #191f28;
-      border: 1px solid #2b3544;
-      color: var(--ink);
+      margin: 4px auto;
+      background: #181d26;
+      border: 1px solid #242c3b;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      user-select: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .dpad-btn {
+      position: absolute;
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
       font-size: 1.1rem;
-      transition: all 0.1s;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: all 0.12s;
     }
-    .dpad-btn:active, .dpad-btn.active {
-      background: #2b3648;
-      box-shadow: 0 0 14px var(--accent-glow);
-      border-color: var(--accent);
-    }
-    .dpad-up { top: 0; left: 66px; width: 88px; height: 62px; border-radius: 26px 26px 8px 8px; }
-    .dpad-down { bottom: 0; left: 66px; width: 88px; height: 62px; border-radius: 8px 8px 26px 26px; }
-    .dpad-left { top: 66px; left: 0; width: 62px; height: 88px; border-radius: 26px 8px 8px 26px; }
-    .dpad-right { top: 66px; right: 0; width: 62px; height: 88px; border-radius: 8px 26px 26px 8px; }
+    .dpad-btn:active, .dpad-btn.active { color: var(--accent); transform: scale(1.15); }
+    .dpad-up { top: 12px; left: 50%; transform: translateX(-50%); width: 70px; height: 50px; }
+    .dpad-down { bottom: 12px; left: 50%; transform: translateX(-50%); width: 70px; height: 50px; }
+    .dpad-left { left: 12px; top: 50%; transform: translateY(-50%); width: 50px; height: 70px; }
+    .dpad-right { right: 12px; top: 50%; transform: translateY(-50%); width: 50px; height: 70px; }
     .dpad-center {
-      top: 68px; left: 68px; width: 84px; height: 84px;
+      width: 82px;
+      height: 82px;
+      background: #222938;
+      border: 1px solid #323d50;
       border-radius: 50%;
-      background: #232c3a;
-      border: 2px solid #37475a;
+      color: #fff;
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.95rem;
+      z-index: 2;
     }
-    .dpad-center:active, .dpad-center.active {
-      background: var(--accent);
-      border-color: #60a5fa;
-      transform: scale(0.95);
-    }
+    .dpad-center:active, .dpad-center.active { background: var(--accent); }
 
-    /* Grids */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .grid-6 { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
-
-    /* Cluster for Volume & Channel Pills */
     .cluster {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin: 4px 0;
     }
     .pill {
+      background: #181d26;
+      border: 1px solid #242c3b;
+      border-radius: 18px;
       display: flex;
       flex-direction: column;
-      background: var(--card-sub);
-      border: 1px solid var(--card-border);
-      border-radius: 22px;
-      overflow: hidden;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px;
+      height: 96px;
     }
     .pill button {
       background: transparent;
       border: none;
-      color: var(--ink);
+      color: #fff;
       font-size: 1.1rem;
-      padding: 14px 0;
       cursor: pointer;
+      width: 100%;
+      height: 34px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.1s;
-    }
-    .pill button:active { background: #2a3443; }
-    .pill span {
-      text-align: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 2px 0;
-    }
-
-    /* Color Keys */
-    .color-btn { height: 38px; border-radius: 8px; font-weight: 600; font-size: 0.78rem; }
-    .btn-red { background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #fca5a5; }
-    .btn-green { background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #6ee7b7; }
-    .btn-yellow { background: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #fde68a; }
-    .btn-blue { background: rgba(59, 130, 246, 0.15); border-color: #3b82f6; color: #93c5fd; }
-
-    /* Clickable Screen Canvas */
-    .screen-container {
-      position: relative;
-      width: 100%;
-      background: #000;
       border-radius: 12px;
-      overflow: hidden;
-      aspect-ratio: 16/9;
-      cursor: crosshair;
-      border: 1px solid var(--card-border);
+      transition: background 0.15s;
     }
-    .screen-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .pill button:active { background: #242c3b; color: var(--accent); }
+    .pill span {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .color-btn { font-size: 1rem; padding: 6px; }
+    .btn-red { color: #f87171; }
+    .btn-green { color: #4ade80; }
+    .btn-yellow { color: #facc15; }
+    .btn-blue { color: #60a5fa; }
+
+    /* Screen Mirror */
+    .screen-container {
+      width: 100%;
+      max-width: 840px;
+      margin: 0 auto;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #242c3b;
+      position: relative;
+      cursor: crosshair;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .screen-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
     .tap-ripple {
       position: absolute;
-      width: 26px;
-      height: 26px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       border: 2px solid var(--accent);
-      background: rgba(59, 130, 246, 0.4);
-      transform: translate(-50%, -50%);
-      pointer-events: none;
+      background: rgba(47, 109, 246, 0.35);
+      transform: translate(-50%, -50%) scale(0.2);
       animation: ripple 0.5s ease-out forwards;
+      pointer-events: none;
     }
     @keyframes ripple {
-      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
-      100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+      to { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
     }
 
     /* Inputs */
-    .typing-box { display: flex; gap: 8px; }
     .text-input {
-      flex: 1;
-      background: #0d1015;
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      color: var(--ink);
-      font-size: 0.9rem;
+      background: #181d26;
+      border: 1px solid #242c3b;
+      color: #fff;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      padding: 9px 12px;
       outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
     }
     .text-input:focus { border-color: var(--accent); }
-
-    /* Meters */
-    .meter-box { display: flex; flex-direction: column; gap: 6px; }
-    .meter-label { display: flex; justify-content: space-between; font-size: 0.82rem; }
-    .meter-bar {
-      width: 100%;
-      height: 9px;
-      background: #0d1015;
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid var(--card-border);
-    }
-    .meter-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #60a5fa);
-      border-radius: 999px;
-      transition: width 0.3s ease;
-    }
-    .meter-fill.warn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .meter-fill.bad { background: linear-gradient(90deg, #ef4444, #f87171); }
-
-    /* Tables & Lists */
-    .diag-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
-    .diag-table tr { border-bottom: 1px solid #1e242e; }
-    .diag-table td { padding: 9px 4px; }
-    .diag-table td:first-child { color: var(--muted); width: 40%; }
-    .diag-table td:last-child { color: var(--ink); font-weight: 500; text-align: right; }
-
-    /* Items */
-    .list-container { display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
-    .item-card {
+    .typing-box {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 14px;
-      background: var(--card-sub);
-      border: 1px solid var(--card-border);
-      border-radius: 11px;
-      font-size: 0.84rem;
+      gap: 8px;
     }
-    .item-meta { display: flex; align-items: center; gap: 12px; max-width: 65%; }
-    .item-icon { font-size: 1.5rem; flex-shrink: 0; }
-    .item-details { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
-    .item-title { font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .item-sub { font-size: 0.72rem; color: var(--muted); word-break: break-all; }
-    .item-actions { display: flex; align-items: center; gap: 6px; }
 
-    /* Badges */
-    .badge { padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 500; }
-    .badge-off { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
-    .badge-on { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
-    .badge-kept { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
-
-    /* Layout Visual TV Canvas (Pagamase / cleanyourtv-panel) */
+    /* Mockup */
     .tv-mockup {
-      background: radial-gradient(ellipse at 30% 35%, rgba(59, 130, 246, 0.18) 0%, #0d1117 60%, #06080b 100%);
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 24px;
+      background: #06080c;
+      border: 1px solid #242c3b;
+      border-radius: 12px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
-    .mock-top { display: flex; justify-content: space-between; align-items: flex-start; }
-    .mock-clock { font-size: 2.4rem; font-weight: 300; line-height: 1; }
-    .mock-greet { font-size: 0.76rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-    .mock-pills { display: flex; gap: 6px; }
-    .mock-pill {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 0.76rem;
+    .mock-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .mock-greet {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .mock-clock {
+      font-size: 1.8rem;
+      font-weight: 300;
+      color: #fff;
     }
     .dock-zone {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1.5px dashed rgba(255, 255, 255, 0.15);
-      border-radius: 14px;
-      padding: 12px;
-      min-height: 90px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed #242c3b;
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 70px;
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
     .tile {
       background: #1e2633;
       border: 1px solid #323d4e;
-      border-radius: 10px;
-      padding: 8px 12px;
+      border-radius: 8px;
+      padding: 7px 11px;
       font-size: 0.8rem;
       font-weight: 600;
       color: #fff;
       display: flex;
       align-items: center;
       gap: 8px;
-      cursor: grab;
       user-select: none;
-      transition: all 0.15s;
     }
-    .tile:active { cursor: grabbing; transform: scale(0.96); }
-    .tile-del { font-size: 0.85rem; color: var(--danger); cursor: pointer; padding: 0 4px; }
+    .tile-del { font-size: 0.82rem; color: var(--danger); cursor: pointer; padding: 0 4px; }
+
+    /* Lists */
+    .list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .item-card {
+      background: #181d26;
+      border: 1px solid #242c3b;
+      border-radius: 9px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .item-icon { font-size: 1.3rem; }
+    .item-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .item-title {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* Meters */
+    .meter-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+    }
+    .meter-bar {
+      height: 8px;
+      background: #181d26;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #242c3b;
+    }
+    .meter-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.3s;
+    }
+    .meter-fill.warn { background: var(--warning); }
+    .meter-fill.bad { background: var(--danger); }
+
+    /* Tables */
+    .diag-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    .diag-table tr { border-bottom: 1px solid #1c222e; }
+    .diag-table tr:last-child { border-bottom: none; }
+    .diag-table td { padding: 9px 4px; }
+    .diag-table td:first-child { color: var(--muted); width: 38%; font-weight: 500; }
+    .diag-table td:last-child { color: #fff; font-weight: 600; text-align: right; }
+
+    /* Badges */
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .badge-on { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .badge-off { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
 
     /* Terminal Console */
     .term-box {
       background: #080a0e;
       border: 1px solid #1c222d;
-      border-radius: 10px;
+      border-radius: 9px;
       padding: 12px;
       font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 0.78rem;
@@ -693,7 +730,7 @@ HTML_MASTER = """<!DOCTYPE html>
       transform: translateX(-50%) translateY(100px);
       background: #1e293b;
       color: #fff;
-      padding: 9px 18px;
+      padding: 8px 16px;
       border-radius: 999px;
       font-size: 0.82rem;
       box-shadow: 0 4px 16px rgba(0,0,0,0.5);
@@ -708,92 +745,64 @@ HTML_MASTER = """<!DOCTYPE html>
 <body>
 
   <header>
-    <div class="brand">
-      <span>📺</span>
-      <span id="headerTitle">TV Remote & Control Center</span>
-    </div>
+    <div class="brand">Google TV</div>
     <div class="chips">
       <div class="chip" id="chipTv">
         <div class="status-dot"></div>
         <span id="tvHostLabel">Connected</span>
       </div>
-      <button class="lang-btn" id="langSwitch" onclick="toggleLang()">ES / EN</button>
-      <button class="btn btn-sm btn-danger" onclick="sendKey('POWER')">⏻ Power</button>
+      <button class="btn btn-sm btn-danger" onclick="sendKey('POWER')">Power</button>
     </div>
   </header>
 
-  <!-- NAVIGATION TABS -->
-  <nav class="tabs" role="tablist">
-    <button class="tab-btn active" onclick="switchTab('remote')">🎮 Remote</button>
-    <button class="tab-btn" onclick="switchTab('layout')">🖼️ Layout</button>
-    <button class="tab-btn" onclick="switchTab('apps')">📱 Apps</button>
-    <button class="tab-btn" onclick="switchTab('files')">📁 Files</button>
-    <button class="tab-btn" onclick="switchTab('debloat')">🧹 Debloat</button>
-    <button class="tab-btn" onclick="switchTab('health')">🩺 Health</button>
-    <button class="tab-btn" onclick="switchTab('auto')">⏰ Automation</button>
-    <button class="tab-btn" onclick="switchTab('setup')">🛠️ Setup</button>
-  </nav>
+  <!-- CONSOLIDATED PRIMARY TABS & SUBTABS -->
+  <div class="nav-container">
+    <nav class="main-tabs" role="tablist">
+      <button class="main-tab-btn active" data-tab="remote" onclick="switchMainTab('remote')">Remote</button>
+      <button class="main-tab-btn" data-tab="launcher" onclick="switchMainTab('launcher')">Launcher</button>
+      <button class="main-tab-btn" data-tab="storage" onclick="switchMainTab('storage')">Storage</button>
+      <button class="main-tab-btn" data-tab="system" onclick="switchMainTab('system')">System</button>
+    </nav>
+
+    <!-- Subtabs for Remote -->
+    <div class="subtabs-bar active" data-parent="remote">
+      <button class="subtab-btn active" data-sub="keypad" onclick="switchSubTab('remote', 'keypad')">Keypad</button>
+      <button class="subtab-btn" data-sub="screen" onclick="switchSubTab('remote', 'screen')">Screen</button>
+      <button class="subtab-btn" data-sub="input" onclick="switchSubTab('remote', 'input')">Input</button>
+    </div>
+
+    <!-- Subtabs for Launcher -->
+    <div class="subtabs-bar" data-parent="launcher">
+      <button class="subtab-btn active" data-sub="layout" onclick="switchSubTab('launcher', 'layout')">Layout</button>
+      <button class="subtab-btn" data-sub="apps" onclick="switchSubTab('launcher', 'apps')">Apps</button>
+    </div>
+
+    <!-- Subtabs for Storage -->
+    <div class="subtabs-bar" data-parent="storage">
+      <button class="subtab-btn active" data-sub="files" onclick="switchSubTab('storage', 'files')">Files</button>
+      <button class="subtab-btn" data-sub="wallpaper" onclick="switchSubTab('storage', 'wallpaper')">Wallpaper</button>
+    </div>
+
+    <!-- Subtabs for System -->
+    <div class="subtabs-bar" data-parent="system">
+      <button class="subtab-btn active" data-sub="health" onclick="switchSubTab('system', 'health')">Health</button>
+      <button class="subtab-btn" data-sub="debloat" onclick="switchSubTab('system', 'debloat')">Debloat</button>
+      <button class="subtab-btn" data-sub="tools" onclick="switchSubTab('system', 'tools')">Tools</button>
+    </div>
+  </div>
 
   <main>
-    <!-- ================= TAB 1: REMOTE ================= -->
-    <section class="tab-panel active" id="tab-remote">
-      <div class="remote-grid">
-        <!-- LEFT COLUMN: LIVE SCREEN & TYPING -->
-        <div style="display:flex; flex-direction:column; gap:16px;">
-          <!-- Screen Mirror -->
-          <div class="card">
-            <div class="card-head">
-              <span class="card-title">Live Screen Mirror (Touch to Click TV)</span>
-              <div style="display:flex; gap:6px;">
-                <button class="btn btn-sm" onclick="refreshScreen()">🔄</button>
-                <button class="btn btn-sm" id="autoBtn" onclick="toggleAutoRefresh()">⏱ Auto</button>
-                <a class="btn btn-sm" id="dlBtn" href="/api/screenshot" download="screen.png" style="text-decoration:none;">💾 Save</a>
-              </div>
-            </div>
-            <div class="screen-container" id="screenContainer" onclick="handleScreenTap(event)">
-              <img id="screenImg" class="screen-img" src="/api/screenshot" alt="TV Screen Mirror">
-            </div>
-          </div>
-
-          <!-- Quick Text Typing -->
-          <div class="card">
-            <span class="card-title">Type on TV</span>
-            <div class="typing-box">
-              <input type="text" id="typeInput" class="text-input" placeholder="Type text and press Send..." onkeydown="if(event.key==='Enter') sendText()">
-              <button class="btn btn-primary" onclick="sendText()">Send</button>
-            </div>
-          </div>
-
-          <!-- Quick Deep Link URL -->
-          <div class="card">
-            <span class="card-title">Open URL on TV</span>
-            <div class="typing-box">
-              <input type="text" id="urlInput" class="text-input" placeholder="https://youtu.be/... or stream link" onkeydown="if(event.key==='Enter') sendUrl()">
-              <button class="btn btn-primary" onclick="sendUrl()">Open</button>
-            </div>
-          </div>
-
-          <!-- HDMI Source Switcher -->
-          <div class="card">
-            <span class="card-title">HDMI Inputs</span>
-            <div class="grid-3">
-              <button class="btn" onclick="launchInput('HDMI 1')">🔌 HDMI 1</button>
-              <button class="btn" onclick="launchInput('HDMI 2')">🔌 HDMI 2</button>
-              <button class="btn" onclick="launchInput('AV')">📺 Live TV</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- RIGHT COLUMN: ERGONOMIC REMOTE -->
-        <div style="display:flex; flex-direction:column; gap:16px;">
+    <!-- ================= 1. REMOTE -> KEYPAD ================= -->
+    <section class="tab-panel active" id="panel-remote-keypad">
+      <div class="remote-wrap">
+        <div class="remote-box">
           <div class="card">
             <div class="grid-3">
-              <button class="btn btn-danger" onclick="sendKey('POWER')">⏻ Power</button>
-              <button class="btn" onclick="sendKey('SETTINGS')">⚙️ Settings</button>
-              <button class="btn" onclick="sendKey('MENU')">☰ Menu</button>
+              <button class="btn btn-danger" onclick="sendKey('POWER')">Power</button>
+              <button class="btn" onclick="sendKey('SETTINGS')">Settings</button>
+              <button class="btn" onclick="sendKey('MENU')">Menu</button>
             </div>
 
-            <!-- D-Pad with Central OK -->
             <div class="dpad-container">
               <button class="dpad-btn dpad-up" data-k="UP">▲</button>
               <button class="dpad-btn dpad-left" data-k="LEFT">◀</button>
@@ -802,13 +811,11 @@ HTML_MASTER = """<!DOCTYPE html>
               <button class="dpad-btn dpad-down" data-k="DOWN">▼</button>
             </div>
 
-            <!-- Navigation Bar -->
             <div class="grid-2">
-              <button class="btn" onclick="sendKey('BACK')">↩ Back</button>
-              <button class="btn" onclick="sendKey('HOME')">🏠 Home</button>
+              <button class="btn" onclick="sendKey('BACK')">Back</button>
+              <button class="btn" onclick="sendKey('HOME')">Home</button>
             </div>
 
-            <!-- Volume & Channel Pills -->
             <div class="cluster">
               <div class="pill">
                 <button onclick="sendKey('VOL_UP')">▲</button>
@@ -822,28 +829,25 @@ HTML_MASTER = """<!DOCTYPE html>
               </div>
             </div>
 
-            <button class="btn" onclick="sendKey('MUTE')">🔇 Mute Audio</button>
+            <button class="btn" onclick="sendKey('MUTE')">Mute</button>
 
-            <!-- Media Playback -->
-            <div class="grid-4" style="margin-top:4px;">
+            <div class="grid-4">
               <button class="btn" onclick="sendKey('PREV')">⏮</button>
               <button class="btn" onclick="sendKey('REWIND')">⏪</button>
               <button class="btn" onclick="sendKey('PLAY_PAUSE')">⏯</button>
               <button class="btn" onclick="sendKey('FAST_FORWARD')">⏩</button>
             </div>
 
-            <!-- Color Keys -->
-            <div class="grid-4" style="margin-top:4px;">
+            <div class="grid-4">
               <button class="btn color-btn btn-red" onclick="sendKey('RED')">●</button>
               <button class="btn color-btn btn-green" onclick="sendKey('GREEN')">●</button>
               <button class="btn color-btn btn-yellow" onclick="sendKey('YELLOW')">●</button>
               <button class="btn color-btn btn-blue" onclick="sendKey('BLUE')">●</button>
             </div>
 
-            <!-- Numpad Toggle -->
-            <div class="card-head" style="margin-top:4px;">
+            <div class="card-head">
               <span class="card-title">Numeric Pad</span>
-              <span style="font-size:0.74rem; cursor:pointer; color:var(--accent);" onclick="toggleNumpad()">Toggle ▾</span>
+              <span style="font-size:0.75rem; cursor:pointer; color:var(--accent);" onclick="toggleNumpad()">Toggle ▾</span>
             </div>
             <div id="numpadGrid" class="grid-3" style="display:none;">
               <button class="btn" onclick="sendKey('NUM_1')">1</button>
@@ -864,41 +868,76 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= TAB 2: LAYOUT (Pagamase/cleanyourtv-panel) ================= -->
-    <section class="tab-panel" id="tab-layout">
-      <!-- Visual TV Mockup Canvas -->
+    <!-- ================= 2. REMOTE -> SCREEN ================= -->
+    <section class="tab-panel" id="panel-remote-screen">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Screen Mirror</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm" onclick="refreshScreen()">Refresh</button>
+            <button class="btn btn-sm" id="autoBtn" onclick="toggleAutoRefresh()">Auto</button>
+            <a class="btn btn-sm" id="dlBtn" href="/api/screenshot" download="screen.png" style="text-decoration:none;">Save</a>
+          </div>
+        </div>
+        <div class="screen-container" id="screenContainer" onclick="handleScreenTap(event)">
+          <img id="screenImg" class="screen-img" src="/api/screenshot" alt="TV Screen Mirror">
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 3. REMOTE -> INPUT ================= -->
+    <section class="tab-panel" id="panel-remote-input">
+      <div class="card">
+        <span class="card-title">Type Text</span>
+        <div class="typing-box">
+          <input type="text" id="typeInput" class="text-input" placeholder="Type text..." onkeydown="if(event.key==='Enter') sendText()">
+          <button class="btn btn-primary" onclick="sendText()">Send</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="card-title">Open URL</span>
+        <div class="typing-box">
+          <input type="text" id="urlInput" class="text-input" placeholder="https://..." onkeydown="if(event.key==='Enter') sendUrl()">
+          <button class="btn btn-primary" onclick="sendUrl()">Open</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="card-title">HDMI Inputs</span>
+        <div class="grid-3">
+          <button class="btn" onclick="launchInput('HDMI 1')">HDMI 1</button>
+          <button class="btn" onclick="launchInput('HDMI 2')">HDMI 2</button>
+          <button class="btn" onclick="launchInput('AV')">Live TV</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 4. LAUNCHER -> LAYOUT ================= -->
+    <section class="tab-panel" id="panel-launcher-layout">
       <div class="tv-mockup">
         <div class="mock-top">
           <div>
             <div class="mock-greet" id="mockGreetingText">GOOD EVENING, DHRUV</div>
             <div class="mock-clock" id="mockClock">21:00</div>
           </div>
-          <div class="mock-pills">
-            <span class="mock-pill">Inputs</span>
-            <span class="mock-pill">Wi-Fi</span>
-            <span class="mock-pill">Settings</span>
-          </div>
         </div>
-
         <div>
-          <span class="card-title" style="color:#cbd5e1; margin-bottom:8px; display:block;">Dock Apps (Top Row)</span>
-          <div class="dock-zone" id="dockZone">
-            <!-- Rendered by JS -->
-          </div>
+          <span class="card-title" style="margin-bottom:8px; display:block;">Dock Apps</span>
+          <div class="dock-zone" id="dockZone"></div>
         </div>
       </div>
 
-      <!-- Layout Controls Card -->
       <div class="card">
         <div class="card-head">
-          <span class="card-title">CleanYourTV Launcher Appearance</span>
-          <button class="btn btn-primary" onclick="pushLayoutToTv()">🚀 Push to TV</button>
+          <span class="card-title">Appearance & Grid</span>
+          <button class="btn btn-primary" onclick="pushLayoutToTv()">Push to TV</button>
         </div>
 
         <div class="grid-3">
           <div>
             <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Greeting Name</label>
-            <input type="text" id="cfgGreeting" class="text-input" placeholder="e.g. Dhruv" oninput="updateMockup()">
+            <input type="text" id="cfgGreeting" class="text-input" placeholder="Dhruv" oninput="updateMockup()">
           </div>
           <div>
             <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Grid Columns</label>
@@ -923,118 +962,93 @@ HTML_MASTER = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Available Apps to Add to Dock -->
       <div class="card">
-        <span class="card-title">Available Apps (Click to add to Dock)</span>
-        <div class="grid-6" id="availableAppsGrid">
-          <!-- Rendered by JS -->
-        </div>
+        <span class="card-title">Available Apps</span>
+        <div class="grid-6" id="availableAppsGrid"></div>
       </div>
     </section>
 
-    <!-- ================= TAB 3: APPS ================= -->
-    <section class="tab-panel" id="tab-apps">
+    <!-- ================= 5. LAUNCHER -> APPS ================= -->
+    <section class="tab-panel" id="panel-launcher-apps">
       <div class="card">
         <div class="card-head">
-          <span class="card-title">Installed TV Applications</span>
+          <span class="card-title">Installed Apps</span>
           <div style="display:flex; gap:8px;">
-            <input type="text" id="appFilter" class="text-input" style="padding:4px 10px; font-size:0.8rem; width:160px;" placeholder="Filter apps..." oninput="filterApps()">
-            <button class="btn btn-sm" onclick="loadApps()">🔄 Refresh</button>
+            <input type="text" id="appFilter" class="text-input" style="padding:4px 10px; font-size:0.8rem; width:160px;" placeholder="Filter..." oninput="filterApps()">
+            <button class="btn btn-sm" onclick="loadApps()">Refresh</button>
           </div>
         </div>
         <div class="list-container" id="appsList">
-          <div style="text-align:center; padding:20px; color:var(--muted);">Loading installed apps...</div>
+          <div style="text-align:center; padding:20px; color:var(--muted);">Loading apps...</div>
         </div>
       </div>
 
-      <!-- Drag & Drop APK Installer -->
       <div class="card">
-        <span class="card-title">Upload & Install APK on TV</span>
+        <span class="card-title">Upload & Install APK</span>
         <div class="typing-box">
           <input type="file" id="apkFileInput" class="text-input" accept=".apk" style="padding:6px;">
-          <button class="btn btn-primary" onclick="uploadAndInstallApk()">📦 Install APK</button>
+          <button class="btn btn-primary" onclick="uploadAndInstallApk()">Install APK</button>
         </div>
       </div>
     </section>
 
-    <!-- ================= TAB 4: FILES ================= -->
-    <section class="tab-panel" id="tab-files">
+    <!-- ================= 6. STORAGE -> FILES ================= -->
+    <section class="tab-panel" id="panel-storage-files">
       <div class="card">
-        <!-- Quick Places -->
         <div class="card-head">
-          <span class="card-title">TV Storage Explorer</span>
+          <span class="card-title">Storage Explorer</span>
           <div style="display:flex; gap:6px;">
             <button class="btn btn-sm" onclick="loadFiles('/sdcard')">Home</button>
             <button class="btn btn-sm" onclick="loadFiles('/sdcard/Download')">Downloads</button>
             <button class="btn btn-sm" onclick="loadFiles('/sdcard/Movies')">Movies</button>
             <button class="btn btn-sm" onclick="loadFiles('/sdcard/Pictures')">Pictures</button>
-            <button class="btn btn-sm" onclick="createFolder()">📁 New Folder</button>
+            <button class="btn btn-sm" onclick="createFolder()">New Folder</button>
           </div>
         </div>
 
-        <!-- Breadcrumbs -->
-        <div id="fileCrumbs" style="font-size:0.82rem; color:var(--muted); font-weight:500; padding:4px 2px; word-break:break-all;">/sdcard</div>
+        <div id="fileCrumbs" style="font-size:0.82rem; color:var(--muted); font-weight:500; padding:2px; word-break:break-all;">/sdcard</div>
 
-        <!-- File list -->
         <div class="list-container" id="filesList">
           <div style="text-align:center; padding:20px; color:var(--muted);">Loading files...</div>
         </div>
 
-        <!-- File Upload to TV -->
-        <div class="card-head" style="margin-top:8px;">
-          <span class="card-title">Send File to Current TV Folder</span>
+        <div class="card-head" style="margin-top:6px;">
+          <span class="card-title">Upload File to Directory</span>
         </div>
         <div class="typing-box">
           <input type="file" id="generalFileInput" class="text-input" style="padding:6px;">
-          <button class="btn btn-primary" onclick="uploadGeneralFile()">⬆ Upload</button>
+          <button class="btn btn-primary" onclick="uploadGeneralFile()">Upload</button>
         </div>
       </div>
     </section>
 
-    <!-- ================= TAB 5: DEBLOAT (gethari/clean-your-tv-companion) ================= -->
-    <section class="tab-panel" id="tab-debloat">
+    <!-- ================= 7. STORAGE -> WALLPAPER ================= -->
+    <section class="tab-panel" id="panel-storage-wallpaper">
       <div class="card">
-        <div class="card-head">
-          <span class="card-title">Multi-Brand Debloat Presets</span>
-          <select id="presetBrandSelect" class="text-input" style="width:220px; padding:6px 10px;" onchange="loadPresetDebloat()">
-            <option value="tcl">TCL Google TV (QM6K Pro)</option>
-            <option value="xiaomi">Xiaomi / Redmi (Mi TV 4A)</option>
-            <option value="sony">Sony BRAVIA (KD-55X85J)</option>
-            <option value="hisense">Hisense Android TV (HiSmart)</option>
-            <option value="philips">Philips Google TV (R8G)</option>
-            <option value="common">Android TV / Google TV (Common)</option>
-          </select>
-        </div>
-
-        <div class="grid-2">
-          <button class="btn btn-primary" onclick="applyDebloatPreset()">🧹 Apply Preset Debloat</button>
-          <button class="btn btn-danger" onclick="restoreAllDebloat()">↩ Restore All Packages</button>
-        </div>
-
-        <div class="list-container" id="debloatPresetList">
-          <div style="text-align:center; padding:20px; color:var(--muted);">Loading preset packages...</div>
+        <span class="card-title">Wallpaper</span>
+        <div class="typing-box">
+          <input type="file" id="wallpaperFileInput" class="text-input" accept="image/*" style="padding:6px;">
+          <button class="btn btn-primary" onclick="uploadWallpaper()">Set Wallpaper</button>
         </div>
       </div>
     </section>
 
-    <!-- ================= TAB 6: HEALTH ================= -->
-    <section class="tab-panel" id="tab-health">
+    <!-- ================= 8. SYSTEM -> HEALTH ================= -->
+    <section class="tab-panel" id="panel-system-health">
       <div class="card">
         <div class="card-head">
-          <span class="card-title">Real-time System Meters</span>
-          <button class="btn btn-sm" onclick="loadHealth()">🔄 Refresh</button>
+          <span class="card-title">System Performance</span>
+          <button class="btn btn-sm" onclick="loadHealth()">Refresh</button>
         </div>
 
-        <!-- CPU Load Meter -->
         <div class="meter-box">
           <div class="meter-label">
-            <span>CPU Load Average (1m, 5m, 15m)</span>
+            <span>CPU Load</span>
             <b id="cpuMeterVal">Loading...</b>
           </div>
           <div class="meter-bar"><div id="cpuFill" class="meter-fill" style="width: 20%;"></div></div>
         </div>
 
-        <!-- RAM Usage Meter -->
         <div class="meter-box">
           <div class="meter-label">
             <span>Memory (RAM)</span>
@@ -1043,104 +1057,108 @@ HTML_MASTER = """<!DOCTYPE html>
           <div class="meter-bar"><div id="ramFill" class="meter-fill" style="width: 50%;"></div></div>
         </div>
 
-        <!-- Storage Meter -->
         <div class="meter-box">
           <div class="meter-label">
-            <span>Internal Storage (/data)</span>
+            <span>Storage (/data)</span>
             <b id="storageMeterVal">Loading...</b>
           </div>
           <div class="meter-bar"><div id="storageFill" class="meter-fill" style="width: 25%;"></div></div>
         </div>
 
-        <div style="margin-top:4px;">
-          <button class="btn btn-sm btn-primary" onclick="freeRam()">🧹 Free Unused RAM</button>
+        <div>
+          <button class="btn btn-sm btn-primary" onclick="freeRam()">Free RAM</button>
         </div>
       </div>
 
-      <!-- Detailed Diagnostics -->
       <div class="card">
-        <span class="card-title">Hardware & Network Telemetry</span>
+        <span class="card-title">Diagnostics</span>
         <table class="diag-table" id="diagTable">
           <tr><td>TV Model</td><td id="diagModel">Loading...</td></tr>
           <tr><td>Manufacturer</td><td id="diagMfg">-</td></tr>
           <tr><td>Android OS</td><td id="diagVersion">-</td></tr>
-          <tr><td>Display Resolution</td><td id="diagRes">-</td></tr>
-          <tr><td>Display Density</td><td id="diagDensity">-</td></tr>
-          <tr><td>Wi-Fi Network (SSID)</td><td id="diagSsid">-</td></tr>
-          <tr><td>Wi-Fi Signal & Link</td><td id="diagWifiSignal">-</td></tr>
+          <tr><td>Resolution</td><td id="diagRes">-</td></tr>
+          <tr><td>Density</td><td id="diagDensity">-</td></tr>
+          <tr><td>Wi-Fi Network</td><td id="diagSsid">-</td></tr>
+          <tr><td>Wi-Fi Signal</td><td id="diagWifiSignal">-</td></tr>
           <tr><td>Thermal Status</td><td id="diagThermal">-</td></tr>
-          <tr><td>Active Window Focus</td><td id="diagFocus" style="font-size:0.75rem;">-</td></tr>
-          <tr><td>System Uptime</td><td id="diagUptime">-</td></tr>
+          <tr><td>Window Focus</td><td id="diagFocus" style="font-size:0.75rem;">-</td></tr>
+          <tr><td>Uptime</td><td id="diagUptime">-</td></tr>
         </table>
       </div>
     </section>
 
-    <!-- ================= TAB 7: AUTOMATION ================= -->
-    <section class="tab-panel" id="tab-auto">
+    <!-- ================= 9. SYSTEM -> DEBLOAT ================= -->
+    <section class="tab-panel" id="panel-system-debloat">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Google TV Debloat</span>
+          <select id="presetBrandSelect" class="text-input" style="width:230px; padding:6px 10px;" onchange="loadPresetDebloat()">
+            <option value="tcl">TCL Google TV</option>
+            <option value="sony">Sony BRAVIA Google TV</option>
+            <option value="common">Google TV (Common)</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <button class="btn btn-primary" onclick="applyDebloatPreset()">Apply Debloat</button>
+          <button class="btn btn-danger" onclick="restoreAllDebloat()">Restore All</button>
+        </div>
+
+        <div class="list-container" id="debloatPresetList">
+          <div style="text-align:center; padding:20px; color:var(--muted);">Loading packages...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 10. SYSTEM -> TOOLS ================= -->
+    <section class="tab-panel" id="panel-system-tools">
+      <div class="card">
+        <span class="card-title">Animation Scale</span>
+        <div class="grid-3">
+          <button class="btn" onclick="setAnimationScale(0.0)">Instant (0.0x)</button>
+          <button class="btn" onclick="setAnimationScale(0.5)">Snappy (0.5x)</button>
+          <button class="btn" onclick="setAnimationScale(1.0)">Stock (1.0x)</button>
+        </div>
+      </div>
+
       <div class="card">
         <span class="card-title">Sleep Timer</span>
-        <div id="timerCountdown" style="font-size:1.8rem; font-weight:700; text-align:center; color:var(--accent); margin:10px 0;">Off</div>
+        <div id="timerCountdown" style="font-size:1.8rem; font-weight:700; text-align:center; color:var(--accent); margin:8px 0;">Off</div>
         <div class="grid-3">
-          <button class="btn" onclick="setSleepTimer(15)">15 mins</button>
-          <button class="btn" onclick="setSleepTimer(30)">30 mins</button>
-          <button class="btn" onclick="setSleepTimer(45)">45 mins</button>
-          <button class="btn" onclick="setSleepTimer(60)">60 mins</button>
-          <button class="btn" onclick="setSleepTimer(90)">90 mins</button>
-          <button class="btn" onclick="setSleepTimer(120)">120 mins</button>
+          <button class="btn" onclick="setSleepTimer(15)">15m</button>
+          <button class="btn" onclick="setSleepTimer(30)">30m</button>
+          <button class="btn" onclick="setSleepTimer(45)">45m</button>
+          <button class="btn" onclick="setSleepTimer(60)">60m</button>
+          <button class="btn" onclick="setSleepTimer(90)">90m</button>
+          <button class="btn" onclick="setSleepTimer(120)">120m</button>
         </div>
         <button class="btn btn-danger" onclick="setSleepTimer(0)">Cancel Timer</button>
       </div>
 
       <div class="card">
-        <span class="card-title">Display & Night Mode</span>
+        <span class="card-title">Display</span>
         <div class="grid-2">
-          <button class="btn" onclick="sendShell('input keyevent KEYCODE_SLEEP')">🌙 Screen Off (Keep Audio)</button>
-          <button class="btn" onclick="sendShell('input keyevent KEYCODE_WAKEUP')">☀️ Wake Display</button>
+          <button class="btn" onclick="sendKey('SLEEP')">Screen Off</button>
+          <button class="btn" onclick="sendKey('WAKEUP')">Wake Display</button>
         </div>
       </div>
-    </section>
 
-    <!-- ================= TAB 8: SETUP & WALLPAPER ================= -->
-    <section class="tab-panel" id="tab-setup">
-      <!-- Optimize TV -->
       <div class="card">
-        <span class="card-title">Optimize TV UI Speeds</span>
-        <p style="font-size:0.8rem; color:var(--muted);">Adjust window and animator transitions for instantaneous navigation.</p>
+        <span class="card-title">Reboot</span>
         <div class="grid-3">
-          <button class="btn" onclick="setAnimationScale(0.0)">⚡ Instant (0.0x)</button>
-          <button class="btn" onclick="setAnimationScale(0.5)">🏎 Snappy (0.5x)</button>
-          <button class="btn" onclick="setAnimationScale(1.0)">🐢 Stock (1.0x)</button>
+          <button class="btn" onclick="rebootTv('soft')">Soft Reboot</button>
+          <button class="btn btn-danger" onclick="rebootTv('full')">Full Reboot</button>
+          <button class="btn btn-danger" onclick="rebootTv('recovery')">Recovery</button>
         </div>
       </div>
 
-      <!-- Wallpaper Staging (gethari/clean-your-tv-companion) -->
       <div class="card">
-        <span class="card-title">Wallpaper Photo Staging</span>
-        <p style="font-size:0.8rem; color:var(--muted);">Upload a custom photo from your computer or phone to set as launcher background.</p>
+        <span class="card-title">ADB Shell</span>
         <div class="typing-box">
-          <input type="file" id="wallpaperFileInput" class="text-input" accept="image/*" style="padding:6px;">
-          <button class="btn btn-primary" onclick="uploadWallpaper()">🖼️ Set Wallpaper</button>
-        </div>
-      </div>
-
-      <!-- TV Reboot Controls -->
-      <div class="card">
-        <span class="card-title">Reboot Controls</span>
-        <div class="grid-3">
-          <button class="btn" onclick="rebootTv('soft')">🔄 Soft Reboot</button>
-          <button class="btn btn-danger" onclick="rebootTv('full')">🔁 Full Reboot</button>
-          <button class="btn btn-danger" onclick="rebootTv('recovery')">⚙️ Recovery</button>
-        </div>
-      </div>
-
-      <!-- Interactive Shell Console -->
-      <div class="card">
-        <span class="card-title">Interactive ADB Shell Console</span>
-        <div class="typing-box">
-          <input type="text" id="shellInput" class="text-input" placeholder="e.g. getprop or pm list packages" onkeydown="if(event.key==='Enter') runShell()">
+          <input type="text" id="shellInput" class="text-input" placeholder="Command..." onkeydown="if(event.key==='Enter') runShell()">
           <button class="btn btn-primary" onclick="runShell()">Run</button>
         </div>
-        <div class="term-box" id="termOutput">Console initialized.</div>
+        <div class="term-box" id="termOutput">Console ready.</div>
       </div>
     </section>
   </main>
@@ -1148,13 +1166,20 @@ HTML_MASTER = """<!DOCTYPE html>
   <div id="toast"></div>
 
   <script>
+    let activeMainTab = 'remote';
+    let activeSubTabs = {
+      remote: 'keypad',
+      launcher: 'layout',
+      storage: 'files',
+      system: 'health'
+    };
+
     let currentPath = '/sdcard';
     let autoInterval = null;
     let sleepSecondsRemaining = 0;
     let sleepTimerInterval = null;
     let installedApps = [];
     let dockApps = [];
-    let isSpanish = false;
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -1163,25 +1188,35 @@ HTML_MASTER = """<!DOCTYPE html>
       setTimeout(() => t.classList.remove('show'), 2200);
     }
 
-    function toggleLang() {
-      isSpanish = !isSpanish;
-      document.getElementById('langSwitch').textContent = isSpanish ? 'EN / ES' : 'ES / EN';
-      document.getElementById('headerTitle').textContent = isSpanish ? 'Control de TV y Panel Maestro' : 'TV Remote & Control Center';
-      showToast(isSpanish ? 'Idioma: Español' : 'Language: English');
+    function switchMainTab(mainTabId) {
+      activeMainTab = mainTabId;
+      document.querySelectorAll('.main-tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === mainTabId);
+      });
+      document.querySelectorAll('.subtabs-bar').forEach(sb => {
+        sb.classList.toggle('active', sb.dataset.parent === mainTabId);
+      });
+      switchSubTab(mainTabId, activeSubTabs[mainTabId]);
     }
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    function switchSubTab(mainTabId, subTabId) {
+      activeSubTabs[mainTabId] = subTabId;
+      const subBar = document.querySelector(`.subtabs-bar[data-parent="${mainTabId}"]`);
+      if (subBar) {
+        subBar.querySelectorAll('.subtab-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.sub === subTabId);
+        });
+      }
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-      document.getElementById('tab-' + tabId).classList.add('active');
+      const target = document.getElementById(`panel-${mainTabId}-${subTabId}`);
+      if (target) target.classList.add('active');
 
-      if (tabId === 'remote') refreshScreen();
-      if (tabId === 'layout') loadLayout();
-      if (tabId === 'apps') loadApps();
-      if (tabId === 'files') loadFiles(currentPath);
-      if (tabId === 'debloat') loadPresetDebloat();
-      if (tabId === 'health') loadHealth();
+      if (mainTabId === 'remote' && subTabId === 'screen') refreshScreen();
+      if (mainTabId === 'launcher' && subTabId === 'layout') loadLayout();
+      if (mainTabId === 'launcher' && subTabId === 'apps') loadApps();
+      if (mainTabId === 'storage' && subTabId === 'files') loadFiles(currentPath);
+      if (mainTabId === 'system' && subTabId === 'health') loadHealth();
+      if (mainTabId === 'system' && subTabId === 'debloat') loadPresetDebloat();
     }
 
     function toggleNumpad() {
@@ -1189,7 +1224,6 @@ HTML_MASTER = """<!DOCTYPE html>
       el.style.display = (el.style.display === 'none') ? 'grid' : 'none';
     }
 
-    // Key dispatch with tactile haptic and long-press
     async function sendKey(key, isLong = false) {
       if (navigator.vibrate) navigator.vibrate(25);
       try {
@@ -1205,11 +1239,11 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
-    // Long press on D-Pad buttons
+    // D-Pad Pointer Handlers
     document.querySelectorAll('[data-k]').forEach(btn => {
       let timer = null;
       let isLong = false;
-      btn.addEventListener('pointerdown', (e) => {
+      btn.addEventListener('pointerdown', () => {
         isLong = false;
         btn.classList.add('active');
         timer = setTimeout(() => {
@@ -1241,9 +1275,9 @@ HTML_MASTER = """<!DOCTYPE html>
           body: JSON.stringify({ text })
         });
         input.value = '';
-        showToast('Text streamed to TV');
+        showToast('Sent');
       } catch (e) {
-        showToast('Failed to stream text');
+        showToast('Failed to send text');
       }
     }
 
@@ -1258,9 +1292,9 @@ HTML_MASTER = """<!DOCTYPE html>
           body: JSON.stringify({ url })
         });
         input.value = '';
-        showToast('Launched URL on TV');
+        showToast('Opened URL');
       } catch (e) {
-        showToast('Failed to launch URL');
+        showToast('Failed to open URL');
       }
     }
 
@@ -1277,7 +1311,7 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
-    // Click-to-Tap touch mirror
+    // Touch Screen Mirror Click-to-Tap
     function handleScreenTap(e) {
       const container = document.getElementById('screenContainer');
       const rect = container.getBoundingClientRect();
@@ -1313,15 +1347,15 @@ HTML_MASTER = """<!DOCTYPE html>
       if (autoInterval) {
         clearInterval(autoInterval);
         autoInterval = null;
-        btn.textContent = '⏱ Auto';
+        btn.textContent = 'Auto';
       } else {
         autoInterval = setInterval(refreshScreen, 3000);
-        btn.textContent = '⏱ Auto (3s)';
+        btn.textContent = 'Auto (3s)';
         refreshScreen();
       }
     }
 
-    // Layout Builder (Pagamase/cleanyourtv-panel)
+    // Layout
     async function loadLayout() {
       try {
         const res = await fetch('/api/layout');
@@ -1337,7 +1371,6 @@ HTML_MASTER = """<!DOCTYPE html>
         renderDock();
         updateMockup();
 
-        // Populate available apps grid
         if (!installedApps.length) {
           const aRes = await fetch('/api/apps');
           const aData = await aRes.json();
@@ -1362,7 +1395,7 @@ HTML_MASTER = """<!DOCTYPE html>
         tile.className = 'tile';
         tile.innerHTML = `
           <span>${info.icon} ${info.name}</span>
-          <span class="tile-del" onclick="removeDockApp(${index})" title="Remove">✕</span>
+          <span class="tile-del" onclick="removeDockApp(${index})">✕</span>
         `;
         container.appendChild(tile);
       });
@@ -1386,7 +1419,7 @@ HTML_MASTER = """<!DOCTYPE html>
       if (!dockApps.includes(pkg)) {
         dockApps.push(pkg);
         renderDock();
-        showToast('Added to dock');
+        showToast('Added');
       }
     }
 
@@ -1401,7 +1434,7 @@ HTML_MASTER = """<!DOCTYPE html>
     }
 
     async function pushLayoutToTv() {
-      showToast('Pushing layout & settings to TV...');
+      showToast('Pushing layout to TV...');
       const body = {
         dock: dockApps,
         greeting_name: document.getElementById('cfgGreeting').value.trim(),
@@ -1418,14 +1451,14 @@ HTML_MASTER = """<!DOCTYPE html>
           body: JSON.stringify(body)
         });
         const d = await res.json();
-        showToast(d.ok ? 'Launcher layout pushed & applied!' : 'Failed: ' + d.error);
+        showToast(d.ok ? 'Layout applied!' : 'Failed: ' + d.error);
         setTimeout(refreshScreen, 1500);
       } catch (e) {
         showToast('Push layout error');
       }
     }
 
-    // Apps Management
+    // Apps
     async function loadApps() {
       const list = document.getElementById('appsList');
       list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Loading apps...</div>';
@@ -1458,10 +1491,10 @@ HTML_MASTER = """<!DOCTYPE html>
             </div>
           </div>
           <div class="item-actions">
-            <button class="btn btn-sm btn-primary" onclick="appAction('launch', '${a.pkg}')">▶ Launch</button>
-            <button class="btn btn-sm" onclick="appAction('stop', '${a.pkg}')">⏹ Stop</button>
-            <button class="btn btn-sm" onclick="appAction('clear', '${a.pkg}')">🧹 Clear</button>
-            <button class="btn btn-sm btn-danger" onclick="appAction('freeze', '${a.pkg}')">❄️ Freeze</button>
+            <button class="btn btn-sm btn-primary" onclick="appAction('launch', '${a.pkg}')">Launch</button>
+            <button class="btn btn-sm" onclick="appAction('stop', '${a.pkg}')">Stop</button>
+            <button class="btn btn-sm" onclick="appAction('clear', '${a.pkg}')">Clear</button>
+            <button class="btn btn-sm btn-danger" onclick="appAction('freeze', '${a.pkg}')">Freeze</button>
           </div>
         `;
         list.appendChild(card);
@@ -1475,15 +1508,15 @@ HTML_MASTER = """<!DOCTYPE html>
 
     async function appAction(act, pkg) {
       if (act === 'clear' && !confirm('Clear data for ' + pkg + '?')) return;
-      if (act === 'freeze' && !confirm('Freeze/disable ' + pkg + '?')) return;
-      showToast('Executing ' + act + ' on ' + pkg + '...');
+      if (act === 'freeze' && !confirm('Freeze ' + pkg + '?')) return;
+      showToast('Executing ' + act + '...');
       try {
         await fetch('/api/apps/action', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: act, pkg })
         });
-        showToast('App action completed');
+        showToast('Done');
       } catch (e) {
         showToast('Action failed');
       }
@@ -1492,11 +1525,11 @@ HTML_MASTER = """<!DOCTYPE html>
     async function uploadAndInstallApk() {
       const fileInput = document.getElementById('apkFileInput');
       if (!fileInput.files.length) {
-        showToast('Select an APK file first');
+        showToast('Select an APK file');
         return;
       }
       const file = fileInput.files[0];
-      showToast('Uploading ' + file.name + ' to TV...');
+      showToast('Uploading ' + file.name + '...');
       try {
         const res = await fetch('/api/files/upload?dest=/data/local/tmp/' + encodeURIComponent(file.name), {
           method: 'POST',
@@ -1504,33 +1537,33 @@ HTML_MASTER = """<!DOCTYPE html>
         });
         const d = await res.json();
         if (d.ok) {
-          showToast('Installing APK on TV...');
+          showToast('Installing...');
           const instRes = await fetch('/api/apps/install', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path: '/data/local/tmp/' + file.name })
           });
           const instData = await instRes.json();
-          showToast(instData.ok ? 'APK Installed successfully!' : 'Install failed: ' + instData.output);
+          showToast(instData.ok ? 'Installed successfully!' : 'Install failed: ' + instData.output);
           loadApps();
         }
       } catch (e) {
-        showToast('Upload/Install error');
+        showToast('Upload error');
       }
     }
 
-    // Files Explorer
+    // Files
     async function loadFiles(path) {
       currentPath = path;
       document.getElementById('fileCrumbs').textContent = path;
       const list = document.getElementById('filesList');
-      list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Reading folder...</div>';
+      list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Loading...</div>';
       try {
         const res = await fetch('/api/files?path=' + encodeURIComponent(path));
         const data = await res.json();
         list.innerHTML = '';
         if (!data.items || !data.items.length) {
-          list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Empty directory</div>';
+          list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Empty folder</div>';
           return;
         }
 
@@ -1543,11 +1576,11 @@ HTML_MASTER = """<!DOCTYPE html>
           const isApk = item.name.endsWith('.apk');
           const isMedia = item.name.match(/\\.(mp4|mkv|mp3|png|jpg|jpeg|webp)$/i);
 
-          let acts = `<button class="btn btn-sm btn-danger" onclick="deleteFile('${fullPath}')">🗑</button>`;
+          let acts = `<button class="btn btn-sm btn-danger" onclick="deleteFile('${fullPath}')">Delete</button>`;
           if (!item.dir) {
-            acts = `<a class="btn btn-sm" href="/api/files/download?path=${encodeURIComponent(fullPath)}" download style="text-decoration:none;">⬇</a>` + acts;
-            if (isApk) acts = `<button class="btn btn-sm btn-primary" onclick="installRemoteApk('${fullPath}')">📦 Install</button>` + acts;
-            if (isMedia) acts = `<button class="btn btn-sm" onclick="openFileOnTv('${fullPath}')">▶ TV</button>` + acts;
+            acts = `<a class="btn btn-sm" href="/api/files/download?path=${encodeURIComponent(fullPath)}" download style="text-decoration:none;">Download</a>` + acts;
+            if (isApk) acts = `<button class="btn btn-sm btn-primary" onclick="installRemoteApk('${fullPath}')">Install</button>` + acts;
+            if (isMedia) acts = `<button class="btn btn-sm" onclick="openFileOnTv('${fullPath}')">Open</button>` + acts;
           }
 
           card.innerHTML = `
@@ -1555,7 +1588,7 @@ HTML_MASTER = """<!DOCTYPE html>
               <span class="item-icon">${item.dir ? '📁' : isApk ? '📦' : isMedia ? '🎬' : '📄'}</span>
               <div class="item-details">
                 <span class="item-title">${item.name}</span>
-                <span class="item-sub">${item.dir ? 'Directory' : item.size + ' · ' + item.date}</span>
+                <span class="item-sub">${item.dir ? 'Folder' : item.size + ' · ' + item.date}</span>
               </div>
             </div>
             <div class="item-actions">${acts}</div>
@@ -1563,12 +1596,12 @@ HTML_MASTER = """<!DOCTYPE html>
           list.appendChild(card);
         });
       } catch (e) {
-        list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--danger);">Failed to read directory</div>';
+        list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--danger);">Failed to load folder</div>';
       }
     }
 
     async function deleteFile(path) {
-      if (!confirm('Permanently delete ' + path + '?')) return;
+      if (!confirm('Delete ' + path + '?')) return;
       showToast('Deleting...');
       try {
         await fetch('/api/files/delete', {
@@ -1599,7 +1632,7 @@ HTML_MASTER = """<!DOCTYPE html>
     }
 
     async function openFileOnTv(path) {
-      showToast('Opening on TV...');
+      showToast('Opening...');
       try {
         await fetch('/api/files/open', {
           method: 'POST',
@@ -1607,12 +1640,12 @@ HTML_MASTER = """<!DOCTYPE html>
           body: JSON.stringify({ path })
         });
       } catch (e) {
-        showToast('Failed to open on TV');
+        showToast('Open failed');
       }
     }
 
     async function installRemoteApk(path) {
-      showToast('Installing APK on TV...');
+      showToast('Installing APK...');
       try {
         const res = await fetch('/api/apps/install', {
           method: 'POST',
@@ -1620,7 +1653,7 @@ HTML_MASTER = """<!DOCTYPE html>
           body: JSON.stringify({ path })
         });
         const d = await res.json();
-        showToast(d.ok ? 'APK Installed!' : 'Install failed: ' + d.output);
+        showToast(d.ok ? 'Installed!' : 'Failed: ' + d.output);
       } catch (e) {
         showToast('Install error');
       }
@@ -1637,18 +1670,39 @@ HTML_MASTER = """<!DOCTYPE html>
           method: 'POST',
           body: file
         });
-        showToast('Uploaded ' + file.name);
+        showToast('Uploaded');
         loadFiles(currentPath);
       } catch (e) {
         showToast('Upload failed');
       }
     }
 
-    // Debloat Presets (gethari/clean-your-tv-companion)
+    // Wallpaper
+    async function uploadWallpaper() {
+      const input = document.getElementById('wallpaperFileInput');
+      if (!input.files.length) {
+        showToast('Select an image');
+        return;
+      }
+      const file = input.files[0];
+      showToast('Uploading wallpaper...');
+      try {
+        const res = await fetch('/api/wallpaper/upload', {
+          method: 'POST',
+          body: file
+        });
+        const d = await res.json();
+        showToast(d.ok ? 'Wallpaper updated' : 'Upload failed');
+      } catch (e) {
+        showToast('Wallpaper error');
+      }
+    }
+
+    // Debloat
     async function loadPresetDebloat() {
       const brand = document.getElementById('presetBrandSelect').value;
       const list = document.getElementById('debloatPresetList');
-      list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Checking package states...</div>';
+      list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Checking status...</div>';
       try {
         const res = await fetch('/api/presets?brand=' + brand);
         const data = await res.json();
@@ -1656,16 +1710,15 @@ HTML_MASTER = """<!DOCTYPE html>
         data.packages.forEach(p => {
           const div = document.createElement('div');
           div.className = 'item-card';
-          const badgeClass = p.disabled ? 'badge-off' : p.safe ? 'badge-on' : 'badge-kept';
-          const badgeText = p.disabled ? 'Disabled' : p.safe ? 'Active' : 'Kept';
+          const badgeClass = p.disabled ? 'badge-off' : 'badge-on';
+          const badgeText = p.disabled ? 'Disabled' : 'Active';
 
           div.innerHTML = `
             <div class="item-meta">
               <span class="item-icon">${p.disabled ? '❄️' : '📦'}</span>
               <div class="item-details">
                 <span class="item-title">${p.name} <small style="color:var(--accent);">(${p.cat})</small></span>
-                <span class="item-sub" style="margin-bottom:2px;">${p.pkg}</span>
-                <span style="font-size:0.72rem; color:var(--muted);">${p.impact}</span>
+                <span class="item-sub">${p.pkg} · ${p.impact}</span>
               </div>
             </div>
             <div class="item-actions">
@@ -1678,7 +1731,7 @@ HTML_MASTER = """<!DOCTYPE html>
           list.appendChild(div);
         });
       } catch (e) {
-        list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--danger);">Failed to load preset</div>';
+        list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--danger);">Failed to load packages</div>';
       }
     }
 
@@ -1698,12 +1751,12 @@ HTML_MASTER = """<!DOCTYPE html>
 
     async function applyDebloatPreset() {
       const brand = document.getElementById('presetBrandSelect').value;
-      if (!confirm(`Apply debloat preset for ${brand}? Non-essential background apps will be paused.`)) return;
-      showToast('Applying preset debloat...');
+      if (!confirm('Apply safe debloat for ' + brand + '?')) return;
+      showToast('Applying preset...');
       try {
         const res = await fetch('/api/presets/apply?brand=' + brand, { method: 'POST' });
         const d = await res.json();
-        showToast(`Preset applied (${d.disabled_count} packages paused)`);
+        showToast(`Preset applied (${d.disabled_count} packages)`);
         loadPresetDebloat();
       } catch (e) {
         showToast('Debloat error');
@@ -1712,23 +1765,22 @@ HTML_MASTER = """<!DOCTYPE html>
 
     async function restoreAllDebloat() {
       if (!confirm('Re-enable all stock packages?')) return;
-      showToast('Restoring all packages...');
+      showToast('Restoring packages...');
       try {
         await fetch('/api/debloat/restore', { method: 'POST' });
-        showToast('All stock packages restored');
+        showToast('Stock packages restored');
         loadPresetDebloat();
       } catch (e) {
         showToast('Restore error');
       }
     }
 
-    // Health & Diagnostics
+    // Health
     async function loadHealth() {
       try {
         const res = await fetch('/api/status');
         const data = await res.json();
 
-        // Meters
         document.getElementById('cpuMeterVal').textContent = data.load || 'N/A';
         document.getElementById('ramMeterVal').textContent = `${data.mem_used_pct}% (${data.mem_avail} free)`;
         document.getElementById('ramFill').style.width = data.mem_used_pct + '%';
@@ -1739,7 +1791,6 @@ HTML_MASTER = """<!DOCTYPE html>
         document.getElementById('storageMeterVal').textContent = data.storage || 'N/A';
         document.getElementById('storageFill').style.width = (data.storage_pct || 25) + '%';
 
-        // Telemetry
         document.getElementById('diagModel').textContent = data.model || 'Unknown';
         document.getElementById('diagMfg').textContent = data.manufacturer || 'TCL';
         document.getElementById('diagVersion').textContent = `Android ${data.release} (SDK ${data.sdk})`;
@@ -1747,7 +1798,7 @@ HTML_MASTER = """<!DOCTYPE html>
         document.getElementById('diagDensity').textContent = data.density || '320 dpi';
         document.getElementById('diagSsid').textContent = data.wifi_ssid || 'root';
         document.getElementById('diagWifiSignal').textContent = `${data.wifi_rssi} dBm · ${data.wifi_speed}`;
-        document.getElementById('diagThermal').textContent = data.thermal || 'Normal (Level 0)';
+        document.getElementById('diagThermal').textContent = data.thermal || 'Normal';
         document.getElementById('diagFocus').textContent = data.current_focus || 'Home';
         document.getElementById('diagUptime').textContent = data.uptime || 'N/A';
 
@@ -1760,7 +1811,7 @@ HTML_MASTER = """<!DOCTYPE html>
     }
 
     async function freeRam() {
-      showToast('Freeing TV memory...');
+      showToast('Freeing memory...');
       try {
         await fetch('/api/free', { method: 'POST' });
         showToast('RAM freed');
@@ -1770,17 +1821,17 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
-    // Sleep Timer
+    // Tools & Sleep Timer
     function setSleepTimer(mins) {
       clearInterval(sleepTimerInterval);
       if (mins <= 0) {
         sleepSecondsRemaining = 0;
         document.getElementById('timerCountdown').textContent = 'Off';
-        showToast('Sleep timer cancelled');
+        showToast('Timer cancelled');
         return;
       }
       sleepSecondsRemaining = mins * 60;
-      showToast(`Sleep timer: ${mins} minutes`);
+      showToast(`Sleep timer: ${mins}m`);
       updateTimer();
       sleepTimerInterval = setInterval(() => {
         sleepSecondsRemaining--;
@@ -1800,36 +1851,15 @@ HTML_MASTER = """<!DOCTYPE html>
       document.getElementById('timerCountdown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    // Setup & Wallpaper Staging
-    async function uploadWallpaper() {
-      const input = document.getElementById('wallpaperFileInput');
-      if (!input.files.length) {
-        showToast('Select an image file first');
-        return;
-      }
-      const file = input.files[0];
-      showToast('Sending wallpaper to TV...');
-      try {
-        const res = await fetch('/api/wallpaper/upload', {
-          method: 'POST',
-          body: file
-        });
-        const d = await res.json();
-        showToast(d.ok ? 'Wallpaper updated on TV!' : 'Wallpaper upload failed');
-      } catch (e) {
-        showToast('Wallpaper error');
-      }
-    }
-
     async function setAnimationScale(scale) {
-      showToast(`Setting animation scale to ${scale}x...`);
+      showToast(`Setting scale to ${scale}x...`);
       try {
         await fetch('/api/setup/optimize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ scale })
         });
-        showToast(`Animation scale set to ${scale}x`);
+        showToast(`Scale set to ${scale}x`);
       } catch (e) {
         showToast('Failed to set animations');
       }
@@ -1837,7 +1867,7 @@ HTML_MASTER = """<!DOCTYPE html>
 
     async function rebootTv(mode) {
       if (!confirm(`Reboot TV (${mode})?`)) return;
-      showToast(`Triggering ${mode} reboot...`);
+      showToast(`Rebooting (${mode})...`);
       try {
         await fetch('/api/setup/reboot', {
           method: 'POST',
@@ -1849,7 +1879,6 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
-    // ADB Terminal
     async function runShell() {
       const input = document.getElementById('shellInput');
       const cmd = input.value.trim();
@@ -1901,20 +1930,32 @@ class WebRemoteServer:
         self.lock = threading.Lock()
         self.shot_path = "/tmp/tv_remote_shot.png"
 
+    def get_device(self, timeout=2.0):
+        try:
+            return tv.PureAdbDevice(self.tv_host, 5555, timeout=timeout).connect()
+        except Exception:
+            return None
+
     def run_tv(self, cmd, timeout=30.0):
         with self.lock:
+            dev = self.get_device(timeout=2.0)
+            if not dev:
+                return 1, "TV offline"
             try:
-                dev = tv.connect()
                 out = dev.shell(cmd, read_timeout_s=timeout)
                 dev.close()
                 return 0, out
             except Exception as e:
+                try: dev.close()
+                except Exception: pass
                 return 1, str(e)
 
     def capture_screenshot(self):
         with self.lock:
+            dev = self.get_device(timeout=2.0)
+            if not dev:
+                return b""
             try:
-                dev = tv.connect()
                 dev.shell("screencap -p /data/local/tmp/screen.png")
                 dev.pull("/data/local/tmp/screen.png", self.shot_path)
                 dev.shell("rm -f /data/local/tmp/screen.png")
@@ -1924,26 +1965,36 @@ class WebRemoteServer:
                         return f.read()
             except Exception as e:
                 sys.stderr.write(f"Screenshot error: {e}\n")
+                try: dev.close()
+                except Exception: pass
         return b""
 
     def pull_file(self, remote_path, local_path):
         with self.lock:
+            dev = self.get_device(timeout=2.0)
+            if not dev:
+                return False
             try:
-                dev = tv.connect()
                 dev.pull(remote_path, local_path)
                 dev.close()
                 return os.path.exists(local_path)
             except Exception:
+                try: dev.close()
+                except Exception: pass
                 return False
 
     def push_file(self, local_path, remote_path):
         with self.lock:
+            dev = self.get_device(timeout=2.0)
+            if not dev:
+                return False
             try:
-                dev = tv.connect()
                 dev.push(local_path, remote_path)
                 dev.close()
                 return True
             except Exception:
+                try: dev.close()
+                except Exception: pass
                 return False
 
     def list_files(self, remote_dir):
@@ -1989,7 +2040,6 @@ class WebRemoteServer:
         return apps
 
     def get_layout(self):
-        # Read dock order from launcher prefs on TV
         _, prefs_xml = self.run_tv("run-as com.gathin.tvhome cat shared_prefs/tvhome_prefs.xml 2>/dev/null")
         dock = []
         if "custom_app_order" in prefs_xml:
@@ -2076,7 +2126,6 @@ def create_handler(server_ctx):
                 _, uptime = server_ctx.run_tv("uptime")
                 _, wifi = server_ctx.run_tv("dumpsys wifi | grep -E 'mWifiInfo SSID:' | head -n 1")
 
-                # Parse memory
                 mem_total = 2500000
                 mem_avail = 500000
                 for m_line in mem.splitlines():
@@ -2088,7 +2137,6 @@ def create_handler(server_ctx):
                         except Exception: pass
                 mem_used_pct = round(((mem_total - mem_avail) / mem_total) * 100)
 
-                # Parse Storage
                 storage_str = "N/A"
                 storage_pct = 25
                 if df.strip():
@@ -2098,7 +2146,6 @@ def create_handler(server_ctx):
                         try: storage_pct = int(parts[4].replace("%", ""))
                         except Exception: pass
 
-                # Parse Wi-Fi
                 wifi_ssid = "root"
                 wifi_rssi = "-48"
                 wifi_speed = "780 Mbps"
@@ -2136,7 +2183,7 @@ def create_handler(server_ctx):
                     "wifi_ssid": wifi_ssid,
                     "wifi_rssi": wifi_rssi,
                     "wifi_speed": wifi_speed,
-                    "thermal": "Normal (Level 0)",
+                    "thermal": "Normal",
                     "current_focus": focus_clean,
                     "uptime": uptime.strip(),
                     "ip": server_ctx.tv_host,
@@ -2194,7 +2241,6 @@ def create_handler(server_ctx):
 
             content_len = int(self.headers.get("Content-Length", 0))
 
-            # Handle direct binary file uploads (general file or wallpaper)
             if path == "/api/files/upload":
                 dest = query.get("dest", [""])[0]
                 if not dest:
@@ -2218,7 +2264,6 @@ def create_handler(server_ctx):
                 except Exception: pass
                 return self._send(200 if ok else 500, json.dumps({"ok": ok}).encode("utf-8"))
 
-            # JSON endpoints
             body_bytes = self.rfile.read(content_len) if content_len > 0 else b"{}"
             try:
                 data = json.loads(body_bytes.decode("utf-8"))
@@ -2361,7 +2406,7 @@ def create_handler(server_ctx):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google TV Web Remote & Master Control Center")
+    parser = argparse.ArgumentParser(description="Google TV Web Remote & Controller")
     parser.add_argument("--port", type=int, default=8765, help="HTTP port (default 8765)")
     parser.add_argument("--tv", default=os.environ.get("TV_HOST", "192.168.0.87"), help="TV IP address")
     args = parser.parse_args()
@@ -2380,7 +2425,7 @@ def main():
         pass
 
     print(f"\n=======================================================")
-    print(f"📺 Master Google TV Interactive Dashboard Live!")
+    print(f"Google TV Controller Active")
     print(f"   Target TV:   {args.tv}")
     print(f"   Local URL:   http://localhost:{args.port}")
     print(f"   Network URL: http://{local_ip}:{args.port}")
@@ -2389,7 +2434,7 @@ def main():
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down master dashboard.")
+        print("\nShutting down controller.")
         server.server_close()
 
 

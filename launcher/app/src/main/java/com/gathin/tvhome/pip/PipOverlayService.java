@@ -12,6 +12,7 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
 import android.media.tv.TvContract;
+import android.media.tv.TvView;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -113,11 +114,22 @@ public class PipOverlayService extends Service {
         startForeground(9876, builder.build());
     }
 
+    private FrameLayout videoContainer;
+    private TvView tvView;
+    private View placeholderView;
+    private TextView statusBadge;
+    private TextView btnAudio;
+    private boolean isMuted = true;
+    private String currentTunedInput = null;
+
     private void buildOverlayView() {
         int overlayType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
+        int pipWidth = dp(384);
+        int pipHeight = dp(216);
+
         windowParams = new WindowManager.LayoutParams(
-                dp(340),
+                pipWidth,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 overlayType,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
@@ -131,65 +143,144 @@ public class PipOverlayService extends Service {
         windowParams.x = dp(24);
         windowParams.y = dp(24);
 
-        // Root container with Apple TV / Glassmorphic styling
+        // Root container with sleek minimalist border
         FrameLayout root = new FrameLayout(this);
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xE60F172A); // 90% slate-900
-        bg.setCornerRadius(dp(16));
-        bg.setStroke(dp(1.5f), 0x4D38BDF8); // cyan accent border
+        bg.setColor(0xF00A0F1D); // Dark slate background
+        bg.setCornerRadius(dp(12));
+        bg.setStroke(dp(1.5f), 0x8038BDF8); // Subtle cyan accent border
         root.setBackground(bg);
-        root.setPadding(dp(14), dp(12), dp(14), dp(12));
+        root.setClipToOutline(true);
 
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        root.addView(content);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        root.addView(layout, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        // Title View: Secondary Input
+        // 16:9 Video Container
+        videoContainer = new FrameLayout(this);
+        LinearLayout.LayoutParams vLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, pipHeight);
+        layout.addView(videoContainer, vLp);
+
+        // Live TvView for hardware HDMI rendering
+        try {
+            tvView = new TvView(this);
+            tvView.setZOrderMediaOverlay(true);
+            tvView.setCallback(new TvView.TvInputCallback() {
+                @Override
+                public void onVideoAvailable(String inputId) {
+                    if (statusBadge != null) {
+                        statusBadge.setText("● LIVE");
+                        statusBadge.setTextColor(0xFF4ADE80); // Green
+                    }
+                    if (placeholderView != null) {
+                        placeholderView.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onVideoUnavailable(String inputId, int reason) {
+                    if (statusBadge != null) {
+                        statusBadge.setText("○ TUNING");
+                        statusBadge.setTextColor(0xFF38BDF8);
+                    }
+                }
+
+                @Override
+                public void onConnectionFailed(String inputId) {
+                    if (statusBadge != null) {
+                        statusBadge.setText("⚠ NO SIGNAL");
+                        statusBadge.setTextColor(0xFFF87171);
+                    }
+                    if (placeholderView != null) {
+                        placeholderView.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+            videoContainer.addView(tvView, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        } catch (Throwable t) {
+            android.util.Log.e("PipOverlayService", "Failed to create TvView", t);
+        }
+
+        // Placeholder / Info Layer (shown when loading, or when secondary source is an App)
+        FrameLayout placeholder = new FrameLayout(this);
+        placeholderView = placeholder;
+        placeholder.setBackgroundColor(0xCC0F172A);
+        LinearLayout placeContent = new LinearLayout(this);
+        placeContent.setOrientation(LinearLayout.VERTICAL);
+        placeContent.setGravity(Gravity.CENTER);
+        FrameLayout.LayoutParams pLp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        placeholder.addView(placeContent, pLp);
+
         titleView = new TextView(this);
         titleView.setTextColor(Color.WHITE);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f);
         titleView.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
-        titleView.setSingleLine(true);
-        content.addView(titleView);
+        titleView.setGravity(Gravity.CENTER);
+        placeContent.addView(titleView);
 
-        // Subtitle View: State / Target Input
         subView = new TextView(this);
         subView.setTextColor(0xFF94A3B8);
         subView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f);
-        subView.setSingleLine(true);
-        content.addView(subView);
+        subView.setGravity(Gravity.CENTER);
+        placeContent.addView(subView);
 
-        // Live Score ticker box
+        videoContainer.addView(placeholder, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // Top Overlay Header (Floating over video)
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setBackgroundColor(0x88000000);
+        header.setPadding(dp(8), dp(4), dp(8), dp(4));
+
+        statusBadge = new TextView(this);
+        statusBadge.setText("● PIP");
+        statusBadge.setTextColor(0xFF38BDF8);
+        statusBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f);
+        statusBadge.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        header.addView(statusBadge, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        videoContainer.addView(header, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
+
+        // Live Score ticker strip
         scoreView = new TextView(this);
         scoreView.setTextColor(0xFFF1F5F9);
-        scoreView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
-        scoreView.setBackgroundColor(0x221E293B);
-        scoreView.setPadding(dp(8), dp(4), dp(8), dp(4));
-        LinearLayout.LayoutParams scLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        scLp.topMargin = dp(4);
-        scLp.bottomMargin = dp(6);
-        scoreView.setLayoutParams(scLp);
-        content.addView(scoreView);
+        scoreView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f);
+        scoreView.setBackgroundColor(0x331E293B);
+        scoreView.setPadding(dp(8), dp(3), dp(8), dp(3));
+        scoreView.setSingleLine(true);
+        layout.addView(scoreView);
 
-        // Action Buttons Row: [ Swap ] [ Move ] [ ✕ ]
+        // Action Controls Bar: [ Swap ] [ Audio 🔊/🔇 ] [ Move ] [ ✕ ]
         LinearLayout btnRow = new LinearLayout(this);
         btnRow.setOrientation(LinearLayout.HORIZONTAL);
         btnRow.setGravity(Gravity.CENTER_VERTICAL);
-        content.addView(btnRow);
+        btnRow.setPadding(dp(8), dp(6), dp(8), dp(6));
+        layout.addView(btnRow);
 
         btnSwap = createActionButton("Swap", 0xFF0284C7, () -> swapInputs(this));
-        LinearLayout.LayoutParams swapLp = new LinearLayout.LayoutParams(0, dp(28), 1.2f);
-        swapLp.rightMargin = dp(6);
+        LinearLayout.LayoutParams swapLp = new LinearLayout.LayoutParams(0, dp(26), 1.2f);
+        swapLp.rightMargin = dp(4);
         btnRow.addView(btnSwap, swapLp);
 
+        btnAudio = createActionButton(isMuted ? "🔇 Muted" : "🔊 Audio", 0xFF334155, this::toggleAudio);
+        LinearLayout.LayoutParams audioLp = new LinearLayout.LayoutParams(0, dp(26), 1.0f);
+        audioLp.rightMargin = dp(4);
+        btnRow.addView(btnAudio, audioLp);
+
         btnMove = createActionButton("Move", 0xFF334155, this::cycleCorner);
-        LinearLayout.LayoutParams moveLp = new LinearLayout.LayoutParams(0, dp(28), 0.8f);
-        moveLp.rightMargin = dp(6);
+        LinearLayout.LayoutParams moveLp = new LinearLayout.LayoutParams(0, dp(26), 0.8f);
+        moveLp.rightMargin = dp(4);
         btnRow.addView(btnMove, moveLp);
 
         btnClose = createActionButton("✕", 0xFF475569, () -> stop(this));
-        LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(dp(30), dp(28));
+        LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(dp(28), dp(26));
         btnRow.addView(btnClose, closeLp);
 
         overlayView = root;
@@ -199,7 +290,7 @@ public class PipOverlayService extends Service {
             Toast.makeText(this, "Cannot show overlay: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
 
-        refreshOverlayLabels();
+        tuneToSecondaryInput();
         startTicker();
     }
 
@@ -250,7 +341,18 @@ public class PipOverlayService extends Service {
         } catch (Exception ignored) {}
     }
 
-    private void refreshOverlayLabels() {
+    public void toggleAudio() {
+        isMuted = !isMuted;
+        if (tvView != null) {
+            tvView.setStreamVolume(isMuted ? 0.0f : 1.0f);
+        }
+        if (btnAudio != null) {
+            btnAudio.setText(isMuted ? "🔇 Muted" : "🔊 Audio");
+        }
+        Toast.makeText(this, isMuted ? "PiP Audio Muted" : "PiP Audio Active", Toast.LENGTH_SHORT).show();
+    }
+
+    public void tuneToSecondaryInput() {
         SharedPreferences sp = getSharedPreferences(PREFS_PIP, MODE_PRIVATE);
         String inA = sp.getString(KEY_INPUT_A, DEFAULT_INPUT_A);
         String inAName = sp.getString(KEY_INPUT_A_NAME, DEFAULT_INPUT_A_NAME);
@@ -259,6 +361,7 @@ public class PipOverlayService extends Service {
         String currentActive = sp.getString(KEY_CURRENT_ACTIVE, inA);
 
         boolean isAActive = currentActive.equals(inA);
+        String targetInput = isAActive ? inB : inA;
         String targetName = isAActive ? inBName : inAName;
         String currentName = isAActive ? inAName : inBName;
 
@@ -266,7 +369,49 @@ public class PipOverlayService extends Service {
             titleView.setText(targetName);
         }
         if (subView != null) {
-            subView.setText("Active: " + currentName + " • '123' to Swap");
+            subView.setText("Main: " + currentName + " • '123' to Swap");
+        }
+
+        if (targetInput != null && targetInput.startsWith("pkg:")) {
+            // Target is an Android App
+            if (tvView != null) {
+                try {
+                    tvView.reset();
+                } catch (Exception ignored) {}
+                tvView.setVisibility(View.GONE);
+            }
+            if (placeholderView != null) {
+                placeholderView.setVisibility(View.VISIBLE);
+            }
+            if (statusBadge != null) {
+                statusBadge.setText("● APP PIP");
+                statusBadge.setTextColor(0xFF38BDF8);
+            }
+            currentTunedInput = null;
+        } else if (targetInput != null && !targetInput.isEmpty()) {
+            // Target is an HDMI or passthrough hardware input
+            if (targetInput.equals(currentTunedInput)) {
+                return;
+            }
+            currentTunedInput = targetInput;
+            if (tvView != null) {
+                tvView.setVisibility(View.VISIBLE);
+                try {
+                    tvView.reset();
+                    Uri uri = TvContract.buildChannelUriForPassthroughInput(targetInput);
+                    tvView.tune(targetInput, uri);
+                    tvView.setStreamVolume(isMuted ? 0.0f : 1.0f);
+                    if (statusBadge != null) {
+                        statusBadge.setText("○ TUNING HDMI");
+                        statusBadge.setTextColor(0xFF38BDF8);
+                    }
+                } catch (Exception e) {
+                    android.util.Log.e("PipOverlayService", "Failed to tune to " + targetInput, e);
+                    if (placeholderView != null) {
+                        placeholderView.setVisibility(View.VISIBLE);
+                    }
+                }
+            }
         }
     }
 
@@ -364,7 +509,7 @@ public class PipOverlayService extends Service {
         launchInputSource(ctx, nextInput, nextName);
 
         if (activeInstance != null) {
-            activeInstance.refreshOverlayLabels();
+            activeInstance.tuneToSecondaryInput();
         }
         Toast.makeText(ctx, "Swapped to " + nextName, Toast.LENGTH_SHORT).show();
     }
@@ -405,6 +550,12 @@ public class PipOverlayService extends Service {
         activeInstance = null;
         if (updateHandler != null && tickerRunnable != null) {
             updateHandler.removeCallbacks(tickerRunnable);
+        }
+        if (tvView != null) {
+            try {
+                tvView.reset();
+            } catch (Exception ignored) {}
+            tvView = null;
         }
         if (overlayView != null && windowManager != null) {
             try {
