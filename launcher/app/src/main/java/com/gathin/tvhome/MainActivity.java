@@ -114,6 +114,7 @@ public class MainActivity extends Activity {
     private ImageView heroBackdropB;
     private boolean isBackdropAVisible = true;
     private String currentBackdropUrl = "";
+    private static boolean screensaverEnsured = false;
     private final Handler heroBackdropHandler = new Handler(Looper.getMainLooper());
     private Runnable pendingBackdropRunnable = null;
 
@@ -298,41 +299,8 @@ public class MainActivity extends Activity {
 
         setupTopBar();
 
-        // Seed default app button mappings to IPTV Color Inputs:
-        // Disney+ -> 🔴 Red (View), Apple TV -> 🟢 Green (Sort), YouTube -> 🟡 Yellow (Favs), TCL -> 🔵 Blue (Move)
+        // Button remappings stored in RemoteKeyMapperService.PREFS_REMAP
         SharedPreferences remapPrefs = getSharedPreferences(RemoteKeyMapperService.PREFS_REMAP, MODE_PRIVATE);
-        SharedPreferences.Editor remapEd = remapPrefs.edit();
-        // Clear previous color keys (183-186) so physical/virtual color keys pass directly to IPTV
-        remapEd.remove(RemoteKeyMapperService.KEY_PREFIX + 183);
-        remapEd.remove(RemoteKeyMapperService.KEY_PREFIX + 184);
-        remapEd.remove(RemoteKeyMapperService.KEY_PREFIX + 185);
-        remapEd.remove(RemoteKeyMapperService.KEY_PREFIX + 186);
-
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + 308)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + 308, RemoteKeyMapperService.ACTION_COLOR_RED);
-        }
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + KeyEvent.KEYCODE_BUTTON_4)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + KeyEvent.KEYCODE_BUTTON_4, RemoteKeyMapperService.ACTION_COLOR_RED);
-        }
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + 307)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + 307, RemoteKeyMapperService.ACTION_COLOR_GREEN);
-        }
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + KeyEvent.KEYCODE_BUTTON_3)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + KeyEvent.KEYCODE_BUTTON_3, RemoteKeyMapperService.ACTION_COLOR_GREEN);
-        }
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + 215)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + 215, RemoteKeyMapperService.ACTION_COLOR_YELLOW);
-        }
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + KeyEvent.KEYCODE_BUTTON_2)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + KeyEvent.KEYCODE_BUTTON_2, RemoteKeyMapperService.ACTION_COLOR_YELLOW);
-        }
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + 305)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + 305, RemoteKeyMapperService.ACTION_COLOR_BLUE);
-        }
-        if (!remapPrefs.contains(RemoteKeyMapperService.KEY_PREFIX + 656)) {
-            remapEd.putString(RemoteKeyMapperService.KEY_PREFIX + 656, RemoteKeyMapperService.ACTION_COLOR_BLUE);
-        }
-        remapEd.apply();
 
         SharedPreferences hubPrefs = HubDataFetcher.prefs(this);
         SharedPreferences.Editor hubEd = hubPrefs.edit();
@@ -390,9 +358,9 @@ public class MainActivity extends Activity {
 
         Intent launchIntent = getIntent();
         if (launchIntent != null && launchIntent.getBooleanExtra("SHOW_SETTINGS", false)) {
-            showSettingsModal();
+            launchNativeSettings();
         } else if (launchIntent != null && launchIntent.getBooleanExtra("SHOW_INPUTS", false)) {
-            showInputsPanel();
+            launchNativeInputs();
         } else if (launchIntent != null && launchIntent.getBooleanExtra("SHOW_REMAP", false)) {
             showRemapModal(launchIntent.getIntExtra("REMOTE_TYPE", 0));
         }
@@ -425,7 +393,13 @@ public class MainActivity extends Activity {
         if (LocalAdbClient.isGoogleTvEnabled(this)) {
             LocalAdbClient.disableGoogleTv(this, false);
         }
-        LocalAdbClient.ensureGoogleTvScreensaver(this);
+        if (!screensaverEnsured) {
+            screensaverEnsured = true;
+            LocalAdbClient.ensureGoogleTvScreensaver(this);
+        }
+        if (lastContentFocus != null && lastContentFocus.getTag() != null) {
+            updateFocusedHeader(lastContentFocus.getTag());
+        }
     }
 
     @Override
@@ -435,6 +409,32 @@ public class MainActivity extends Activity {
         clockHandler.removeCallbacks(clockTick);
         sportsRefreshHandler.removeCallbacks(sportsRefreshRunnable);
         traktRefreshHandler.removeCallbacks(traktRefreshRunnable);
+        heroBackdropHandler.removeCallbacksAndMessages(null);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        HubDataFetcher.clearMemoryCache();
+        currentBackdropUrl = "";
+        if (heroBackdropA != null) heroBackdropA.setImageDrawable(null);
+        if (heroBackdropB != null) heroBackdropB.setImageDrawable(null);
+        System.gc();
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (level >= TRIM_MEMORY_UI_HIDDEN) {
+            HubDataFetcher.clearMemoryCache();
+            currentBackdropUrl = "";
+            if (heroBackdropA != null) heroBackdropA.setImageDrawable(null);
+            if (heroBackdropB != null) heroBackdropB.setImageDrawable(null);
+        }
+        if (level >= TRIM_MEMORY_RUNNING_CRITICAL) {
+            HubDataFetcher.clearMemoryCache();
+            System.gc();
+        }
     }
 
     @Override
@@ -565,9 +565,9 @@ public class MainActivity extends Activity {
             if (inputsScrim.getVisibility() == View.VISIBLE) hideInputsPanel();
             switchViewMode(MODE_APPS);
         });
-        if (btnInputs != null) btnInputs.setOnClickListener(v -> toggleInputsPanel());
+        if (btnInputs != null) btnInputs.setOnClickListener(v -> launchNativeInputs());
         if (btnGoogleTv != null) btnGoogleTv.setOnClickListener(v -> launchGoogleTvLauncher());
-        if (btnSettings != null) btnSettings.setOnClickListener(v -> showSettingsModal());
+        if (btnSettings != null) btnSettings.setOnClickListener(v -> launchNativeSettings());
         inputsScrim.setOnClickListener(v -> hideInputsPanel());
 
         if (btnTrakt != null) btnTrakt.setOnClickListener(v -> showTraktSetupModal());
@@ -1828,10 +1828,15 @@ public class MainActivity extends Activity {
                     .replace("TRAKT LIST • ", "")
                     .replace("TRAKT  •  ", "")
                     .replace("TRAKT • ", "");
-            titleTv.setText(cleanTitle);
-            titleTv.setTextColor(0xD9FFFFFF);
-            titleTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
-            titleTv.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+            titleTv.setText(cleanTitle.toUpperCase(Locale.US));
+            titleTv.setTextColor(0xFFFFFFFF);
+            titleTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f);
+            titleTv.setLetterSpacing(0.04f);
+            try {
+                titleTv.setTypeface(getResources().getFont(R.font.outfit), android.graphics.Typeface.BOLD);
+            } catch (Exception ignored) {
+                titleTv.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD));
+            }
             LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             header.addView(titleTv, tlp);
 
@@ -2088,34 +2093,6 @@ public class MainActivity extends Activity {
                 });
 
                 card.setOnKeyListener((v, keyCode, event) -> {
-                    if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
-                        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                            if (event.getRepeatCount() == 0) {
-                                longPressTriggered = false;
-                                if (pendingLongPress != null) {
-                                    longPressHandler.removeCallbacks(pendingLongPress);
-                                }
-                                pendingLongPress = () -> {
-                                    longPressTriggered = true;
-                                    v.performLongClick();
-                                };
-                                longPressHandler.postDelayed(pendingLongPress, 450);
-                            }
-                            return true;
-                        } else if (event.getAction() == KeyEvent.ACTION_UP) {
-                            if (pendingLongPress != null) {
-                                longPressHandler.removeCallbacks(pendingLongPress);
-                                pendingLongPress = null;
-                            }
-                            if (!longPressTriggered) {
-                                v.performClick();
-                            }
-                            longPressTriggered = false;
-                            return true;
-                        }
-                        return false;
-                    }
-
                     if (keyCode == KeyEvent.KEYCODE_MENU) {
                         if (event.getAction() == KeyEvent.ACTION_DOWN) {
                             v.performLongClick();
@@ -2131,11 +2108,6 @@ public class MainActivity extends Activity {
                     }
 
                     if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-
-                    if (pendingLongPress != null) {
-                        longPressHandler.removeCallbacks(pendingLongPress);
-                        pendingLongPress = null;
-                    }
 
                     if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                         if (colIdx > 0) row.get(colIdx - 1).requestFocus();
@@ -2165,12 +2137,10 @@ public class MainActivity extends Activity {
                     }
                     if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
                         int prevRow = findNonEmptyRow(rowIdx - 1, -1);
-                        android.util.Log.d("TVNAV", "DPAD_UP on row=" + rowIdx + " col=" + colIdx + " prevRow=" + prevRow + " navRows=" + navRows.size());
                         if (prevRow >= 0) {
                             List<View> targetRow = navRows.get(prevRow);
                             int targetCol = Math.min(colIdx, targetRow.size() - 1);
-                            boolean req = targetRow.get(targetCol).requestFocus();
-                            android.util.Log.d("TVNAV", "requestFocus targetRow=" + prevRow + " targetCol=" + targetCol + " res=" + req);
+                            targetRow.get(targetCol).requestFocus();
                         } else {
                             if (currentViewMode == MODE_APPS) {
                                 View btnNewFolder = findViewById(R.id.btnNewFolder);
@@ -2211,20 +2181,17 @@ public class MainActivity extends Activity {
 
     private void animateFocusCard(View v, boolean hasFocus) {
         if (v == null) return;
-
-        if (hasFocus) {
-            if (!(v.getParent() instanceof LinearLayout)) {
-                v.bringToFront();
+        if (v.getParent() instanceof ViewGroup) {
+            ViewGroup parent = (ViewGroup) v.getParent();
+            TextView name = parent.findViewById(R.id.name);
+            if (name != null) {
+                name.setTextColor(hasFocus ? 0xFFFFFFFF : 0xFFE2E8F0);
             }
-            if (v.getParent() instanceof View) {
-                ((View) v.getParent()).invalidate();
+            TextView mediaTitle = parent.findViewById(R.id.mediaTitle);
+            if (mediaTitle != null) {
+                mediaTitle.setTextColor(hasFocus ? 0xFFFFFFFF : 0xFFF1F5F9);
             }
         }
-
-        v.animate().cancel();
-        v.setScaleX(1.0f);
-        v.setScaleY(1.0f);
-        v.setTranslationZ(0f);
     }
 
     private int findNonEmptyRow(int start, int step) {
@@ -2254,7 +2221,9 @@ public class MainActivity extends Activity {
     private void ensureVerticalVisible(int rowIdx, View card) {
         if (hubScroll == null || hubContent == null || card == null) return;
         if (rowIdx == 0) {
-            hubScroll.smoothScrollTo(0, 0);
+            if (hubScroll.getScrollY() != 0) {
+                hubScroll.smoothScrollTo(0, 0);
+            }
             return;
         }
         View target = (card.getParent() instanceof View) ? (View) card.getParent() : card;
@@ -2313,8 +2282,8 @@ public class MainActivity extends Activity {
                         inView.setImageBitmap(bmp);
                         inView.animate().cancel();
                         outView.animate().cancel();
-                        inView.animate().alpha(1f).setDuration(220).withLayer().start();
-                        outView.animate().alpha(0f).setDuration(220).withLayer().withEndAction(() -> {
+                        inView.animate().alpha(1f).setDuration(160).start();
+                        outView.animate().alpha(0f).setDuration(160).withEndAction(() -> {
                             outView.setImageDrawable(null);
                             isBackdropAVisible = !isBackdropAVisible;
                         }).start();
@@ -2322,8 +2291,8 @@ public class MainActivity extends Activity {
                 });
             } else {
                 currentBackdropUrl = "";
-                final ImageView inView = isBackdropAVisible ? heroBackdropB : heroBackdropA;
-                final ImageView outView = isBackdropAVisible ? heroBackdropA : heroBackdropB;
+                final ImageView inView = isBackdropAVisible ? heroBackdropA : heroBackdropB;
+                final ImageView outView = isBackdropAVisible ? heroBackdropB : heroBackdropA;
                 inView.setTag("");
                 outView.setTag("");
 
@@ -2335,68 +2304,127 @@ public class MainActivity extends Activity {
                         new int[]{ topColor, midColor, 0x000A0C10 }
                 );
                 inView.setImageDrawable(gd);
-                inView.animate().cancel();
-                outView.animate().cancel();
-                inView.animate().alpha(1f).setDuration(180).withLayer().start();
-                outView.animate().alpha(0f).setDuration(180).withLayer().withEndAction(() -> {
-                    outView.setImageDrawable(null);
-                    isBackdropAVisible = !isBackdropAVisible;
-                }).start();
+                inView.setAlpha(1f);
+                outView.setImageDrawable(null);
+                outView.setAlpha(0f);
             }
         };
-        heroBackdropHandler.postDelayed(pendingBackdropRunnable, 60);
+        heroBackdropHandler.postDelayed(pendingBackdropRunnable, 120);
     }
 
     private void updateFocusedHeader(Object tag) {
         if (tag instanceof AppEntry) {
             AppEntry e = (AppEntry) tag;
-            heroTag.setVisibility(View.GONE);
-            heroRating.setVisibility(View.GONE);
-            heroExtraBadge.setVisibility(View.GONE);
-            heroActionPrompt.setVisibility(View.GONE);
-            heroTitle.setText(e.label);
-            heroDesc.setText("");
-            heroDesc.setVisibility(View.GONE);
+            if (heroTag != null) {
+                heroTag.setText(getAppCategory(e.pkg));
+                heroTag.setTextColor(0xFF38BDF8);
+                heroTag.setVisibility(View.VISIBLE);
+            }
+            if (heroRating != null) {
+                heroRating.setVisibility(View.GONE);
+            }
+            if (heroExtraBadge != null) {
+                heroExtraBadge.setText("APPLICATION");
+                heroExtraBadge.setTextColor(0xFFE2E8F0);
+                heroExtraBadge.setVisibility(View.VISIBLE);
+            }
+            if (heroActionPrompt != null) {
+                heroActionPrompt.setVisibility(View.GONE);
+            }
+            if (heroTitle != null) {
+                heroTitle.setText(e.label);
+            }
+            if (heroDesc != null) {
+                String desc = getAppDescription(e.pkg, e.label);
+                heroDesc.setText(desc);
+                heroDesc.setVisibility(View.VISIBLE);
+            }
 
             int ambientColor = getAppAmbientColor(e.pkg);
             transitionHeroBackdrop(null, ambientColor);
 
         } else if (tag instanceof FolderEntry) {
             FolderEntry f = (FolderEntry) tag;
-            heroTag.setText("FOLDER");
-            heroTag.setTextColor(0xFFFFB74D);
-            heroTag.setVisibility(View.VISIBLE);
-
-            heroRating.setVisibility(View.GONE);
-
-            heroExtraBadge.setText(f.apps.size() + " Apps");
-            heroExtraBadge.setVisibility(View.VISIBLE);
-
-            heroActionPrompt.setVisibility(View.GONE);
-            heroTitle.setText(f.title + " Folder");
-            heroDesc.setText(getFolderSummary(f));
-            heroDesc.setVisibility(View.VISIBLE);
+            if (heroTag != null) {
+                heroTag.setText("APP FOLDER");
+                heroTag.setTextColor(0xFFFFB74D);
+                heroTag.setVisibility(View.VISIBLE);
+            }
+            if (heroRating != null) {
+                heroRating.setVisibility(View.GONE);
+            }
+            if (heroExtraBadge != null) {
+                heroExtraBadge.setText(f.apps.size() + " Apps");
+                heroExtraBadge.setTextColor(0xFFE2E8F0);
+                heroExtraBadge.setVisibility(View.VISIBLE);
+            }
+            if (heroActionPrompt != null) {
+                heroActionPrompt.setVisibility(View.GONE);
+            }
+            if (heroTitle != null) {
+                heroTitle.setText(f.title + " Folder");
+            }
+            if (heroDesc != null) {
+                heroDesc.setText(getFolderSummary(f));
+                heroDesc.setVisibility(View.VISIBLE);
+            }
 
             transitionHeroBackdrop(null, 0xFF2A2035);
 
         } else if (tag instanceof HubDataFetcher.SportGame) {
             HubDataFetcher.SportGame g = (HubDataFetcher.SportGame) tag;
-            heroTitle.setText(g.awayName + " @ " + g.homeName);
+            if (heroTag != null) {
+                if (g.isLive()) {
+                    heroTag.setText("🔴 LIVE MATCH");
+                    heroTag.setTextColor(0xFFFF4D4D);
+                } else {
+                    heroTag.setText("⚡ UPCOMING");
+                    heroTag.setTextColor(0xFFFBBF24);
+                }
+                heroTag.setVisibility(View.VISIBLE);
+            }
+            if (heroRating != null) {
+                if (!g.oddsDetails.isEmpty()) {
+                    heroRating.setText(g.oddsDetails);
+                    heroRating.setTextColor(0xFFFBBF24);
+                    heroRating.setVisibility(View.VISIBLE);
+                } else if (g.isLive()) {
+                    heroRating.setText(g.statusDetail);
+                    heroRating.setTextColor(0xFFFFE082);
+                    heroRating.setVisibility(View.VISIBLE);
+                } else {
+                    heroRating.setVisibility(View.GONE);
+                }
+            }
+            if (heroExtraBadge != null) {
+                if (g.network != null && !g.network.isEmpty() && !g.network.equalsIgnoreCase(g.league)) {
+                    heroExtraBadge.setText(g.network);
+                    heroExtraBadge.setTextColor(0xFF38BDF8);
+                    heroExtraBadge.setVisibility(View.VISIBLE);
+                } else {
+                    heroExtraBadge.setText(g.league != null ? g.league : "SPORTS");
+                    heroExtraBadge.setTextColor(0xFFE2E8F0);
+                    heroExtraBadge.setVisibility(View.VISIBLE);
+                }
+            }
+            if (heroActionPrompt != null) {
+                heroActionPrompt.setVisibility(View.GONE);
+            }
+            if (heroTitle != null) {
+                heroTitle.setText(g.awayName + " @ " + g.homeName);
+            }
 
             StringBuilder sb = new StringBuilder();
-            if (g.network != null && !g.network.isEmpty() && !g.network.equalsIgnoreCase(g.league)) {
-                sb.append(g.network).append("  •  ");
-            }
             if (g.isLive()) {
-                sb.append("LIVE (").append(g.statusDetail).append(")");
-                sb.append("  •  Score: ").append(g.awayAbbr).append(" ").append(g.awayScore)
+                sb.append("Live in ").append(g.statusDetail);
+                sb.append("  •  Current Score: ").append(g.awayAbbr).append(" ").append(g.awayScore)
                   .append(" - ").append(g.homeAbbr).append(" ").append(g.homeScore);
             } else if (g.isUpcoming()) {
-                sb.append(g.statusDetail);
+                sb.append("Scheduled: ").append(g.statusDetail);
                 if (g.isAwayMlFav) {
-                    sb.append("  •  Fav: ").append(g.awayAbbr).append(" (").append(g.awayMoneyline).append(")");
+                    sb.append("  •  Moneyline Fav: ").append(g.awayAbbr).append(" (").append(g.awayMoneyline).append(")");
                 } else if (g.isHomeMlFav) {
-                    sb.append("  •  Fav: ").append(g.homeAbbr).append(" (").append(g.homeMoneyline).append(")");
+                    sb.append("  •  Moneyline Fav: ").append(g.homeAbbr).append(" (").append(g.homeMoneyline).append(")");
                 }
                 if (!g.oddsDetails.isEmpty()) {
                     sb.append("  •  Spread: ").append(g.oddsDetails);
@@ -2405,25 +2433,52 @@ public class MainActivity extends Activity {
                 sb.append("Final: ").append(g.awayAbbr).append(" ").append(g.awayScore)
                   .append(" - ").append(g.homeAbbr).append(" ").append(g.homeScore);
             }
-            heroDesc.setText(sb.toString().replaceAll("  •  $", ""));
-            heroDesc.setVisibility(View.VISIBLE);
+            if (heroDesc != null) {
+                heroDesc.setText(sb.toString().replaceAll("  •  $", ""));
+                heroDesc.setVisibility(View.VISIBLE);
+            }
 
             transitionHeroBackdrop(null, g.homeColor != 0 ? g.homeColor : g.awayColor);
 
         } else if (tag instanceof HubDataFetcher.MediaItem) {
             HubDataFetcher.MediaItem m = (HubDataFetcher.MediaItem) tag;
-            heroTitle.setText(m.title);
+            if (heroTag != null) {
+                heroTag.setText(m.type != null && m.type.equalsIgnoreCase("movie") ? "FEATURE FILM" : "SERIES");
+                heroTag.setTextColor(0xFF38BDF8);
+                heroTag.setVisibility(View.VISIBLE);
+            }
+            if (heroRating != null) {
+                if (m.rating > 0) {
+                    heroRating.setText(String.format(Locale.US, "★ %.1f IMDb", m.rating));
+                    heroRating.setTextColor(0xFFFBBF24);
+                    heroRating.setVisibility(View.VISIBLE);
+                } else {
+                    heroRating.setVisibility(View.GONE);
+                }
+            }
+            if (heroExtraBadge != null) {
+                if (m.year > 0) {
+                    heroExtraBadge.setText(String.valueOf(m.year) + (m.genres != null && !m.genres.isEmpty() ? (" • " + m.genres) : ""));
+                    heroExtraBadge.setTextColor(0xFFE2E8F0);
+                    heroExtraBadge.setVisibility(View.VISIBLE);
+                } else {
+                    heroExtraBadge.setVisibility(View.GONE);
+                }
+            }
+            if (heroActionPrompt != null) {
+                heroActionPrompt.setVisibility(View.GONE);
+            }
+            if (heroTitle != null) {
+                heroTitle.setText(m.title);
+            }
 
-            StringBuilder meta = new StringBuilder();
-            if (m.year > 0) meta.append(m.year).append("  •  ");
-            if (m.rating > 0) meta.append("★ ").append(String.format(Locale.US, "%.1f", m.rating)).append("  •  ");
-            if (m.genres != null && !m.genres.isEmpty()) meta.append(m.genres).append("  •  ");
-            if (m.subtitle != null && !m.subtitle.isEmpty()) meta.append(m.subtitle);
-            String metaStr = meta.toString().replaceAll("  •  $", "").trim();
-
-            String desc = (metaStr.isEmpty() ? "" : (metaStr + "\n")) + (m.overview != null ? m.overview : "");
-            heroDesc.setText(desc.trim());
-            heroDesc.setVisibility(View.VISIBLE);
+            String subtitle = (m.subtitle != null && !m.subtitle.isEmpty()) ? m.subtitle.trim() : "";
+            String overview = (m.overview != null && !m.overview.isEmpty()) ? m.overview.trim() : "";
+            String fullDesc = subtitle.isEmpty() ? overview : (subtitle + "  •  " + overview);
+            if (heroDesc != null) {
+                heroDesc.setText(fullDesc);
+                heroDesc.setVisibility(View.VISIBLE);
+            }
 
             if (currentViewMode == MODE_MEDIA || currentViewMode == MODE_HOME) {
                 transitionHeroBackdrop(m.backdropUrl, 0);
@@ -2433,7 +2488,24 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String getAppCategory(String pkg) {
+        if ("com.IPTVOutlet.STC".equals(pkg)) return "LIVE TV & CHANNELS";
+        if ("com.stremio.one".equals(pkg)) return "MEDIA AGGREGATOR";
+        if ("com.gotv.nfl".equals(pkg) || "com.nba.mobile.android".equals(pkg) || "com.espn.score_center".equals(pkg)) return "LIVE SPORTS PASS";
+        if ("com.google.android.youtube.tv".equals(pkg)) return "ONLINE VIDEO 4K";
+        if ("com.apple.atve.androidtv.appletv".equals(pkg)) return "APPLE ORIGINALS";
+        if ("com.netflix.ninja".equals(pkg)) return "NETFLIX 4K HDR";
+        if ("com.amazon.amazonvideo.livingroom".equals(pkg)) return "PRIME VIDEO";
+        if ("com.disney.disneyplus".equals(pkg)) return "DISNEY+ STREAMING";
+        if ("com.peacocktv.peacockandroid".equals(pkg)) return "PEACOCK STREAMING";
+        if ("com.spotify.tv.android".equals(pkg)) return "MUSIC & PODCASTS";
+        return "STREAMING APP";
+    }
+
     private String getAppDescription(String pkg, String label) {
+        if ("com.IPTVOutlet.STC".equals(pkg)) {
+            return "Sky TV delivers premium live television broadcast channels, 24/7 sports feeds, regional news, and cinema streaming directly to your living room.";
+        }
         if ("com.stremio.one".equals(pkg)) {
             return "Stremio is an all-in-one streaming media aggregator. Watch movies, TV shows, and live channels with seamless Trakt library synchronization and community torrent streaming addons.";
         }
@@ -3245,18 +3317,60 @@ public class MainActivity extends Activity {
     }
 
     public void toggleInputsPanel() {
-        if (inputsScrim != null && inputsScrim.getVisibility() == View.VISIBLE) {
-            hideInputsPanel();
-        } else {
-            showInputsPanel();
-        }
+        launchNativeInputs();
     }
 
     public void toggleSettingsModal() {
+        launchNativeSettings();
+    }
+
+    public void launchNativeInputs() {
         if (inputsScrim != null && inputsScrim.getVisibility() == View.VISIBLE) {
             hideInputsPanel();
-        } else {
-            showSettingsModal();
+        }
+        try {
+            Intent intent = new Intent("com.android.tv.action.VIEW_INPUTS");
+            intent.setPackage("com.tcl.suspension");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            return;
+        } catch (Exception ignored) {}
+
+        try {
+            Intent intent = new Intent("com.android.tv.action.VIEW_INPUTS");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            return;
+        } catch (Exception ignored) {}
+
+        try {
+            Intent intent = new Intent("android.settings.TV_INPUT_SETTINGS");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            return;
+        } catch (Exception ignored) {}
+
+        try {
+            Intent intent = new Intent(Settings.ACTION_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception ignored) {}
+    }
+
+    public void launchNativeSettings() {
+        if (inputsScrim != null && inputsScrim.getVisibility() == View.VISIBLE) {
+            hideInputsPanel();
+        }
+        try {
+            Intent intent = new Intent(this, com.gathin.tvhome.settings.LauncherSettingsActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (Exception ignored) {}
         }
     }
 
@@ -3288,6 +3402,14 @@ public class MainActivity extends Activity {
         inputRow.setOrientation(LinearLayout.HORIZONTAL);
         inputRow.setGravity(Gravity.CENTER_VERTICAL);
         hsv.addView(inputRow);
+
+        // 0. HDMI DualView PiP App & Input Setting
+        addInputTile(inputRow, "DualView PiP", "Pair & Swap 2 HDMIs", "⚡", true, "PiP APP", () -> {
+            hideInputsPanel();
+            Intent pipIntent = new Intent(this, com.gathin.tvhome.pip.PipSettingsActivity.class);
+            pipIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(pipIntent);
+        });
 
         // 1. Google TV Main System Input
         addInputTile(inputRow, "Google TV", "Built-in System TV", "🏠", true, "SYSTEM", () -> {
@@ -4093,10 +4215,10 @@ public class MainActivity extends Activity {
                     return true;
                 }
             } else if (keyCode == KeyEvent.KEYCODE_SETTINGS || keyCode == 268) {
-                showSettingsModal();
+                launchNativeSettings();
                 return true;
             } else if (keyCode == KeyEvent.KEYCODE_TV_INPUT || keyCode == 178) {
-                showInputsPanel();
+                launchNativeInputs();
                 return true;
             } else if (keyCode == KeyEvent.KEYCODE_HOME) {
                 if (inputsScrim.getVisibility() == View.VISIBLE) {
@@ -4170,11 +4292,11 @@ public class MainActivity extends Activity {
             return;
         }
         if (RemoteKeyMapperService.ACTION_SETTINGS.equals(target)) {
-            showSettingsModal();
+            launchNativeSettings();
             return;
         }
         if (RemoteKeyMapperService.ACTION_INPUTS.equals(target)) {
-            showInputsPanel();
+            launchNativeInputs();
             return;
         }
         if (RemoteKeyMapperService.ACTION_HOME.equals(target)) {
@@ -4199,11 +4321,11 @@ public class MainActivity extends Activity {
             return;
         }
         if (intent != null && intent.getBooleanExtra("SHOW_SETTINGS", false)) {
-            showSettingsModal();
+            launchNativeSettings();
             return;
         }
         if (intent != null && intent.getBooleanExtra("SHOW_INPUTS", false)) {
-            showInputsPanel();
+            launchNativeInputs();
             return;
         }
         if (intent != null && intent.getBooleanExtra("SHOW_REMAP", false)) {

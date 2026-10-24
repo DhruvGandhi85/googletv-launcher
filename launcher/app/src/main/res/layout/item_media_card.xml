@@ -3,7 +3,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingEnd="10dp">
+    android:paddingEnd="12dp">
 
     <!-- Outer focus ring wrapper -->
     <FrameLayout
@@ -14,11 +14,11 @@
         android:focusable="true"
         android:clickable="true">
 
-        <!-- Compact 16:9 Apple TV Artwork Card (156x88dp) -->
+        <!-- Cinematic 16:9 Artwork Card (160x90dp) -->
         <FrameLayout
             android:id="@+id/surface"
-            android:layout_width="156dp"
-            android:layout_height="88dp"
+            android:layout_width="160dp"
+            android:layout_height="90dp"
             android:clipToOutline="true"
             android:background="@drawable/apple_card_surface">
 
@@ -34,24 +34,24 @@
     <!-- Title & Metadata cleanly BELOW the card -->
     <TextView
         android:id="@+id/mediaTitle"
-        android:layout_width="156dp"
+        android:layout_width="160dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:layout_marginStart="3dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginStart="2dp"
         android:singleLine="true"
         android:ellipsize="end"
-        android:textColor="#F2FFFFFF"
-        android:textSize="11.5sp"
-        android:fontFamily="sans-serif-medium" />
+        android:textColor="#F1F5F9"
+        android:textSize="12sp"
+        android:fontFamily="@font/outfit" />
 
     <TextView
         android:id="@+id/mediaSub"
-        android:layout_width="156dp"
+        android:layout_width="160dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="3dp"
+        android:layout_marginStart="2dp"
         android:singleLine="true"
         android:ellipsize="end"
-        android:textColor="#80FFFFFF"
-        android:textSize="9.5sp"
-        android:fontFamily="sans-serif" />
+        android:textColor="#94A3B8"
+        android:textSize="10sp"
+        android:fontFamily="@font/outfit" />
 </LinearLayout>

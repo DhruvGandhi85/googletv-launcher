@@ -31,6 +31,7 @@ public class RemoteKeyMapperService extends AccessibilityService {
     public static final String ACTION_COLOR_GREEN = "ACTION_COLOR_GREEN";
     public static final String ACTION_COLOR_YELLOW = "ACTION_COLOR_YELLOW";
     public static final String ACTION_COLOR_BLUE = "ACTION_COLOR_BLUE";
+    public static final String ACTION_PIP_SWAP = "ACTION_PIP_SWAP";
 
     public interface KeyCaptureListener {
         void onKeyCaptured(int keyCode, String keyName);
@@ -45,47 +46,7 @@ public class RemoteKeyMapperService extends AccessibilityService {
 
     public static String getMapping(Context ctx, int keyCode) {
         SharedPreferences sp = ctx.getSharedPreferences(PREFS_REMAP, MODE_PRIVATE);
-        String saved = sp.getString(KEY_PREFIX + keyCode, null);
-        if (saved != null) return saved;
-
-        // Factory defaults for TCL RC923A & TLC-925 Remotes:
-        if (keyCode == KeyEvent.KEYCODE_SETTINGS || keyCode == 268) {
-            return ACTION_SETTINGS;
-        }
-        if (keyCode == KeyEvent.KEYCODE_TV_INPUT || keyCode == 178) {
-            return ACTION_INPUTS;
-        }
-        if (keyCode == KeyEvent.KEYCODE_TV || keyCode == 170) {
-            return "com.IPTVOutlet.STC";
-        }
-        if (keyCode == KeyEvent.KEYCODE_GUIDE || keyCode == 172) {
-            return "com.IPTVOutlet.STC";
-        }
-
-        // Remap dedicated App Buttons on Remote to Color Inputs for IPTV (View, Sort, Favs, Move):
-        // 1. Disney+ button -> 🔴 Red (KEYCODE_PROG_RED 183 / View in IPTV)
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_4 || keyCode == 308 || keyCode == 304 || keyCode == 259) {
-            return ACTION_COLOR_RED;
-        }
-        // 2. Apple TV button -> 🟢 Green (KEYCODE_PROG_GREEN 184 / Sort in IPTV)
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_3 || keyCode == 307 || keyCode == 303 || keyCode == 258) {
-            return ACTION_COLOR_GREEN;
-        }
-        // 3. YouTube button -> 🟡 Yellow (KEYCODE_PROG_YELLOW 185 / Favorites in IPTV)
-        if (keyCode == 215 || keyCode == KeyEvent.KEYCODE_BUTTON_2 || keyCode == 306 || keyCode == 302 || keyCode == 257) {
-            return ACTION_COLOR_YELLOW;
-        }
-        // 4. TCL Channel button -> 🔵 Blue (KEYCODE_PROG_BLUE 186 / Move in IPTV)
-        if (keyCode == 305 || keyCode == 656 || keyCode == KeyEvent.KEYCODE_BUTTON_1 || keyCode == 301 || keyCode == 256) {
-            return ACTION_COLOR_BLUE;
-        }
-        if (keyCode == 207) {
-            return "com.netflix.ninja";
-        }
-
-        // Native Color Buttons (183, 184, 185, 186): DO NOT INTERCEPT!
-        // Return null so they pass directly to IPTV.
-        return null;
+        return sp.getString(KEY_PREFIX + keyCode, null);
     }
 
     public static void setMapping(Context ctx, int keyCode, String target) {
@@ -134,14 +95,51 @@ public class RemoteKeyMapperService extends AccessibilityService {
 
         int keyCode = event.getKeyCode();
 
-        // Do not intercept or remap D-Pad navigation keys
+        // Do not intercept or remap D-Pad navigation, system keys, game controller, or media playback buttons
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP ||
             keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
             keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
             keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
             keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
-            keyCode == KeyEvent.KEYCODE_ENTER) {
+            keyCode == KeyEvent.KEYCODE_ENTER ||
+            keyCode == KeyEvent.KEYCODE_BACK ||
+            keyCode == KeyEvent.KEYCODE_HOME ||
+            keyCode == KeyEvent.KEYCODE_SETTINGS ||
+            keyCode == 268 ||
+            keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
+            keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
+            keyCode == KeyEvent.KEYCODE_VOLUME_MUTE ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_PAUSE ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_STOP ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_NEXT ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_REWIND ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_RECORD ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_AUDIO_TRACK ||
+            keyCode == KeyEvent.KEYCODE_CAPTIONS) {
             return false;
+        }
+
+        // Fix hardware TV Inputs button on remote so it opens Inputs menu from any app or HDMI
+        if (keyCode == KeyEvent.KEYCODE_TV_INPUT || keyCode == 178) {
+            launchTarget(ACTION_INPUTS);
+            return true;
+        }
+
+        // Support the "123" virtual remote button (WINDOW 171, INFO 165, or 78)
+        if (keyCode == KeyEvent.KEYCODE_WINDOW || keyCode == 171 || keyCode == 78) {
+            String mapped = getMapping(this, keyCode);
+            if (mapped != null && !mapped.isEmpty() && !"NONE".equals(mapped)) {
+                launchTarget(mapped);
+                return true;
+            }
+            if (com.gathin.tvhome.pip.PipOverlayService.isRunning) {
+                com.gathin.tvhome.pip.PipOverlayService.swapInputs(this);
+                return true;
+            }
         }
 
         // Do not intercept native Color Buttons so they always pass to IPTV
@@ -199,6 +197,10 @@ public class RemoteKeyMapperService extends AccessibilityService {
             LocalAdbClient.injectKeyEvent(KeyEvent.KEYCODE_PROG_BLUE);
             return;
         }
+        if (ACTION_PIP_SWAP.equals(target)) {
+            com.gathin.tvhome.pip.PipOverlayService.swapInputs(this);
+            return;
+        }
         if (target.startsWith("KEY:")) {
             try {
                 int code = Integer.parseInt(target.substring(4));
@@ -220,28 +222,26 @@ public class RemoteKeyMapperService extends AccessibilityService {
         }
 
         if (ACTION_INPUTS.equals(target)) {
-            MainActivity inst = MainActivity.activeInstance;
-            if (inst != null && !inst.isFinishing()) {
-                inst.runOnUiThread(inst::toggleInputsPanel);
-                return;
+            try {
+                Intent inputs = new Intent("com.android.tv.action.VIEW_INPUTS");
+                inputs.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(inputs);
+            } catch (Exception e1) {
+                try {
+                    Intent inputs = new Intent("android.settings.TV_INPUT_SETTINGS");
+                    inputs.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(inputs);
+                } catch (Exception ignored) {}
             }
-            Intent inputs = new Intent(this, MainActivity.class);
-            inputs.putExtra("SHOW_INPUTS", true);
-            inputs.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(inputs);
             return;
         }
 
         if (ACTION_SETTINGS.equals(target)) {
-            MainActivity inst = MainActivity.activeInstance;
-            if (inst != null && !inst.isFinishing()) {
-                inst.runOnUiThread(inst::toggleSettingsModal);
-                return;
-            }
-            Intent settings = new Intent(this, MainActivity.class);
-            settings.putExtra("SHOW_SETTINGS", true);
-            settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(settings);
+            try {
+                Intent settings = new Intent(android.provider.Settings.ACTION_SETTINGS);
+                settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(settings);
+            } catch (Exception ignored) {}
             return;
         }
 

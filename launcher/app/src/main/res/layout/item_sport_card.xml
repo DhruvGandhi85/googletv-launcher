@@ -13,17 +13,17 @@
         android:focusable="true"
         android:clickable="true">
 
-        <!-- Clean 216x88dp Live Sports Scoreboard Card with Logos & TV Channel -->
+        <!-- Clean 220x92dp Modern Sports Scoreboard Card -->
         <LinearLayout
             android:id="@+id/surface"
-            android:layout_width="216dp"
-            android:layout_height="88dp"
+            android:layout_width="220dp"
+            android:layout_height="92dp"
             android:clipToOutline="true"
             android:orientation="vertical"
-            android:paddingStart="11dp"
-            android:paddingEnd="11dp"
-            android:paddingTop="7dp"
-            android:paddingBottom="7dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:background="@drawable/apple_card_surface">
 
             <!-- Top Row: Live Clock / Status & Broadcast Channel & Odds -->
@@ -37,14 +37,14 @@
                     android:id="@+id/statusBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
+                    android:paddingStart="7dp"
+                    android:paddingEnd="7dp"
                     android:paddingTop="2dp"
                     android:paddingBottom="2dp"
                     android:layout_marginEnd="6dp"
                     android:textColor="#FFFFFFFF"
-                    android:textSize="9sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:textSize="9.5sp"
+                    android:fontFamily="@font/outfit"
                     android:singleLine="true" />
 
                 <TextView
@@ -52,9 +52,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="4dp"
-                    android:textColor="#81D4FA"
+                    android:textColor="#38BDF8"
                     android:textSize="9.5sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:fontFamily="@font/outfit"
                     android:singleLine="true"
                     android:ellipsize="end" />
 
@@ -68,9 +68,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:textColor="#B3FFFFFF"
+                    android:textColor="#CBD5E1"
                     android:textSize="9.5sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:fontFamily="@font/outfit"
                     android:singleLine="true"
                     android:ellipsize="end" />
             </LinearLayout>
@@ -85,9 +85,9 @@
 
                 <View
                     android:id="@+id/awayBar"
-                    android:layout_width="3dp"
+                    android:layout_width="3.5dp"
                     android:layout_height="14dp"
-                    android:layout_marginEnd="6dp" />
+                    android:layout_marginEnd="7dp" />
 
                 <ImageView
                     android:id="@+id/awayLogo"
@@ -103,9 +103,9 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="#F8FAFC"
                     android:textSize="13sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:fontFamily="@font/outfit"
                     android:singleLine="true"
                     android:ellipsize="end" />
 
@@ -113,9 +113,9 @@
                     android:id="@+id/awayScore"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="#F8FAFC"
                     android:textSize="13.5sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:fontFamily="@font/outfit"
                     android:singleLine="true" />
             </LinearLayout>
 
@@ -129,9 +129,9 @@
 
                 <View
                     android:id="@+id/homeBar"
-                    android:layout_width="3dp"
+                    android:layout_width="3.5dp"
                     android:layout_height="14dp"
-                    android:layout_marginEnd="6dp" />
+                    android:layout_marginEnd="7dp" />
 
                 <ImageView
                     android:id="@+id/homeLogo"
@@ -147,9 +147,9 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="#F8FAFC"
                     android:textSize="13sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:fontFamily="@font/outfit"
                     android:singleLine="true"
                     android:ellipsize="end" />
 
@@ -157,9 +157,9 @@
                     android:id="@+id/homeScore"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="#F8FAFC"
                     android:textSize="13.5sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:fontFamily="@font/outfit"
                     android:singleLine="true" />
             </LinearLayout>
         </LinearLayout>

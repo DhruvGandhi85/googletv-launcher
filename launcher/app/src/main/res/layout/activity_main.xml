@@ -39,10 +39,10 @@
         android:orientation="vertical"
         android:clipChildren="false"
         android:clipToPadding="false"
-        android:paddingLeft="58dp"
-        android:paddingRight="58dp"
-        android:paddingTop="28dp"
-        android:paddingBottom="18dp">
+        android:paddingLeft="28dp"
+        android:paddingRight="28dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="16dp">
 
         <!-- COMPACT APPLE TV TOP BAR -->
         <!-- CLEAN GOOGLE TV / APPLE TV STYLE TOP BAR -->
@@ -52,51 +52,55 @@
             android:layout_height="36dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="4dp">
+            android:layout_marginBottom="6dp">
 
             <!-- Personalized Greeting & Time (CleanYourTV style) -->
             <TextView
                 android:id="@+id/greeting"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/outfit"
                 android:textColor="#FFF4F6FA"
                 android:textSize="17sp"
                 android:text="Good morning" />
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="14dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
-                android:background="#33FFFFFF" />
-
-            <TextView
-                android:id="@+id/clock"
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif"
-                android:textColor="#B3EBF5FF"
-                android:textSize="13sp" />
+                android:layout_height="28dp"
+                android:layout_marginLeft="14dp"
+                android:background="@drawable/status_pill_bg"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
 
-            <TextView
-                android:id="@+id/date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
-                android:fontFamily="sans-serif"
-                android:textColor="#77EBF5FF"
-                android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/clock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/outfit"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="12.5sp" />
 
-            <TextView
-                android:id="@+id/weatherPill"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:fontFamily="sans-serif-medium"
-                android:textColor="#CCEBF5FF"
-                android:textSize="12sp"
-                android:visibility="gone" />
+                <TextView
+                    android:id="@+id/date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="7dp"
+                    android:fontFamily="@font/outfit"
+                    android:textColor="#94A3B8"
+                    android:textSize="11.5sp" />
+
+                <TextView
+                    android:id="@+id/weatherPill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="8dp"
+                    android:fontFamily="@font/outfit"
+                    android:textColor="#38BDF8"
+                    android:textSize="11.5sp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <!-- Spacer pushes buttons cleanly to the right -->
             <View
@@ -141,104 +145,113 @@
                 android:layout_height="0dp"
                 android:visibility="gone" />
 
-            <!-- GOOGLE TV STYLE TOP NAVIGATION TABS -->
-            <TextView
-                android:id="@+id/btnTabHome"
+            <!-- 2026 SEGMENTED GLASS NAVIGATION TRACK -->
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="28dp"
-                android:layout_marginRight="7dp"
-                android:background="@drawable/pill_active_bg"
-                android:focusable="true"
-                android:gravity="center"
-                android:paddingLeft="13dp"
-                android:paddingRight="13dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Home"
-                android:textColor="@drawable/pill_active_text"
-                android:textSize="11.5sp" />
+                android:layout_height="32dp"
+                android:background="@drawable/glass_pill_track"
+                android:padding="2dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/btnTabSports"
-                android:layout_width="wrap_content"
-                android:layout_height="28dp"
-                android:layout_marginRight="7dp"
-                android:background="@drawable/pill_bg"
-                android:focusable="true"
-                android:gravity="center"
-                android:paddingLeft="13dp"
-                android:paddingRight="13dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Sports"
-                android:textColor="@drawable/pill_text"
-                android:textSize="11.5sp" />
+                <TextView
+                    android:id="@+id/btnTabHome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:background="@drawable/pill_active_bg"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:fontFamily="@font/outfit"
+                    android:text="Home"
+                    android:textColor="@drawable/pill_active_text"
+                    android:textSize="12sp" />
 
-            <TextView
-                android:id="@+id/btnTabMedia"
-                android:layout_width="wrap_content"
-                android:layout_height="28dp"
-                android:layout_marginRight="7dp"
-                android:background="@drawable/pill_bg"
-                android:focusable="true"
-                android:gravity="center"
-                android:paddingLeft="13dp"
-                android:paddingRight="13dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Trakt"
-                android:textColor="@drawable/pill_text"
-                android:textSize="11.5sp" />
+                <TextView
+                    android:id="@+id/btnTabSports"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:layout_marginLeft="4dp"
+                    android:background="@drawable/pill_bg"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:fontFamily="@font/outfit"
+                    android:text="Sports"
+                    android:textColor="@drawable/pill_text"
+                    android:textSize="12sp" />
 
-            <TextView
-                android:id="@+id/btnTabApps"
-                android:layout_width="wrap_content"
-                android:layout_height="28dp"
-                android:layout_marginRight="12dp"
-                android:background="@drawable/pill_bg"
-                android:focusable="true"
-                android:gravity="center"
-                android:paddingLeft="13dp"
-                android:paddingRight="13dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Apps"
-                android:textColor="@drawable/pill_text"
-                android:textSize="11.5sp" />
+                <TextView
+                    android:id="@+id/btnTabMedia"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:layout_marginLeft="4dp"
+                    android:background="@drawable/pill_bg"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:fontFamily="@font/outfit"
+                    android:text="Trakt"
+                    android:textColor="@drawable/pill_text"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/btnTabApps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:layout_marginLeft="4dp"
+                    android:background="@drawable/pill_bg"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:fontFamily="@font/outfit"
+                    android:text="Apps"
+                    android:textColor="@drawable/pill_text"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
             <!-- Spacer divider -->
             <View
                 android:layout_width="1dp"
-                android:layout_height="14dp"
-                android:layout_marginRight="10dp"
-                android:background="#33FFFFFF" />
+                android:layout_height="16dp"
+                android:layout_marginLeft="12dp"
+                android:layout_marginRight="12dp"
+                android:background="#20FFFFFF" />
 
             <!-- TOOLS (Inputs, Google TV, Settings) -->
             <TextView
                 android:id="@+id/btnInputs"
                 android:layout_width="wrap_content"
                 android:layout_height="28dp"
-                android:layout_marginRight="7dp"
+                android:layout_marginRight="6dp"
                 android:background="@drawable/pill_bg"
                 android:focusable="true"
                 android:gravity="center"
-                android:paddingLeft="12dp"
-                android:paddingRight="12dp"
-                android:fontFamily="sans-serif-medium"
+                android:paddingLeft="13dp"
+                android:paddingRight="13dp"
+                android:fontFamily="@font/outfit"
                 android:text="Inputs"
                 android:textColor="@drawable/pill_text"
-                android:textSize="11.5sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/btnGoogleTv"
                 android:layout_width="wrap_content"
                 android:layout_height="28dp"
-                android:layout_marginRight="7dp"
+                android:layout_marginRight="6dp"
                 android:background="@drawable/pill_bg"
                 android:focusable="true"
                 android:gravity="center"
-                android:paddingLeft="12dp"
-                android:paddingRight="12dp"
-                android:fontFamily="sans-serif-medium"
+                android:paddingLeft="13dp"
+                android:paddingRight="13dp"
+                android:fontFamily="@font/outfit"
                 android:text="Google TV"
                 android:textColor="@drawable/pill_text"
-                android:textSize="11.5sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/btnSettings"
@@ -247,12 +260,12 @@
                 android:background="@drawable/pill_bg"
                 android:focusable="true"
                 android:gravity="center"
-                android:paddingLeft="12dp"
-                android:paddingRight="12dp"
-                android:fontFamily="sans-serif-medium"
+                android:paddingLeft="13dp"
+                android:paddingRight="13dp"
+                android:fontFamily="@font/outfit"
                 android:text="Settings"
                 android:textColor="@drawable/pill_text"
-                android:textSize="11.5sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/btnAssistant"
@@ -266,61 +279,62 @@
             android:id="@+id/heroStage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="84dp"
+            android:minHeight="96dp"
             android:orientation="vertical"
+            android:layout_marginBottom="14dp"
             android:paddingTop="2dp"
-            android:paddingBottom="6dp"
+            android:paddingBottom="4dp"
             android:paddingLeft="4dp"
             android:paddingRight="4dp">
 
-            <!-- HERO BADGES ROW (Clean, radical simplicity: hidden to eliminate eyebrow clutter) -->
+            <!-- HERO BADGES ROW -->
             <LinearLayout
                 android:id="@+id/heroBadges"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <TextView
                     android:id="@+id/heroTag"
                     android:layout_width="wrap_content"
-                    android:layout_height="22dp"
+                    android:layout_height="24dp"
                     android:background="@drawable/hero_badge_bg"
                     android:gravity="center"
-                    android:paddingLeft="9dp"
-                    android:paddingRight="9dp"
-                    android:textColor="#FF4DD0E1"
-                    android:textSize="10sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:textColor="#38BDF8"
+                    android:textSize="10.5sp"
+                    android:fontFamily="@font/outfit"
                     android:text="UP NEXT" />
 
                 <TextView
                     android:id="@+id/heroRating"
                     android:layout_width="wrap_content"
-                    android:layout_height="22dp"
+                    android:layout_height="24dp"
                     android:layout_marginLeft="8dp"
                     android:background="@drawable/hero_badge_bg"
                     android:gravity="center"
-                    android:paddingLeft="9dp"
-                    android:paddingRight="9dp"
-                    android:textColor="#FFFFD700"
-                    android:textSize="10sp"
-                    android:fontFamily="sans-serif-bold"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:textColor="#FBBF24"
+                    android:textSize="10.5sp"
+                    android:fontFamily="@font/outfit"
                     android:text="★ 8.8" />
 
                 <TextView
                     android:id="@+id/heroExtraBadge"
                     android:layout_width="wrap_content"
-                    android:layout_height="22dp"
+                    android:layout_height="24dp"
                     android:layout_marginLeft="8dp"
                     android:background="@drawable/hero_badge_bg"
                     android:gravity="center"
-                    android:paddingLeft="9dp"
-                    android:paddingRight="9dp"
-                    android:textColor="#FFF4F6FA"
-                    android:textSize="10sp"
-                    android:fontFamily="sans-serif-medium"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:textColor="#E2E8F0"
+                    android:textSize="10.5sp"
+                    android:fontFamily="@font/outfit"
                     android:text="2024" />
 
                 <TextView
@@ -334,24 +348,28 @@
                 android:id="@+id/heroTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-bold"
+                android:layout_marginTop="5dp"
+                android:fontFamily="@font/outfit"
                 android:textColor="#FFFFFFFF"
-                android:textSize="26sp"
+                android:textSize="28sp"
+                android:shadowColor="#B0000000"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="6"
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:text="" />
 
             <TextView
                 android:id="@+id/heroDesc"
-                android:layout_width="760dp"
+                android:layout_width="820dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:fontFamily="sans-serif"
-                android:textColor="#B8EBF5FF"
-                android:textSize="12sp"
+                android:layout_marginTop="3dp"
+                android:fontFamily="@font/outfit"
+                android:textColor="#CBD5E1"
+                android:textSize="13sp"
                 android:maxLines="2"
-                android:lineSpacingExtra="2dp"
+                android:lineSpacingExtra="3dp"
                 android:ellipsize="end"
                 android:text="" />
         </LinearLayout>
@@ -362,7 +380,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:clipChildren="true"
+            android:clipChildren="false"
             android:clipToPadding="false"
             android:scrollbars="none"
             android:overScrollMode="never">
@@ -391,11 +409,12 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="4dp"
-                        android:layout_marginBottom="3dp"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Apps"
-                        android:textColor="#D9FFFFFF"
-                        android:textSize="14sp" />
+                        android:layout_marginBottom="4dp"
+                        android:fontFamily="@font/outfit"
+                        android:text="APPS"
+                        android:letterSpacing="0.04"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="13.5sp" />
 
                     <HorizontalScrollView
                         android:id="@+id/dockScroll"
@@ -493,10 +512,11 @@
                             android:id="@+id/shelfSportsTitle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
-                            android:text="Live &amp; Upcoming Sports"
-                            android:textColor="#D9FFFFFF"
-                            android:textSize="14sp" />
+                            android:fontFamily="@font/outfit"
+                            android:text="LIVE &amp; UPCOMING SPORTS"
+                            android:letterSpacing="0.04"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="13.5sp" />
 
                         <TextView
                             android:id="@+id/sportsStatus"

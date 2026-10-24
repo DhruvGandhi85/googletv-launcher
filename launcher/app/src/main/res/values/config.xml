@@ -4,8 +4,15 @@
 -->
 <resources>
 
-    <!-- Primary apps pinned directly in Row 1 before any folders. Left empty for dynamic discovery. -->
+    <!-- Primary apps pinned directly in Row 1 before any folders. -->
     <string-array name="dock_apps">
+        <item>com.IPTVOutlet.STC</item>
+        <item>com.stremio.one</item>
+        <item>com.amazon.amazonvideo.livingroom</item>
+        <item>com.gotv.nflgamecenter.us.lite</item>
+        <item>com.google.android.youtube.tv</item>
+        <item>com.netflix.ninja</item>
+        <item>com.apple.atve.androidtv.appletv</item>
     </string-array>
 
     <!-- Apps hidden from the launcher (system services, setup wrappers, redundant duplicates). -->

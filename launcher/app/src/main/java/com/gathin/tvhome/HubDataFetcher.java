@@ -59,16 +59,22 @@ public final class HubDataFetcher {
     public static final String DEFAULT_TRAKT_USERNAME = "DhruvG85";
     private static final String PREFS_NAME = "tvhome_hub_prefs";
 
-    private static final ExecutorService IO_POOL = Executors.newFixedThreadPool(8);
+    private static final ExecutorService IO_POOL = Executors.newFixedThreadPool(2);
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final Map<String, List<SportGame>> CACHED_LEAGUE_GAMES = new ConcurrentHashMap<>();
     private static volatile long lastSportsFetchTime = 0;
-    private static final LruCache<String, Bitmap> MEM_CACHE = new LruCache<String, Bitmap>(16 * 1024) {
+    private static final LruCache<String, Bitmap> MEM_CACHE = new LruCache<String, Bitmap>(8 * 1024) {
         @Override
         protected int sizeOf(String key, Bitmap value) {
             return Math.max(1, value.getByteCount() / 1024);
         }
     };
+
+    public static void clearMemoryCache() {
+        MEM_CACHE.evictAll();
+        UP_NEXT_CACHE.clear();
+        CACHED_LEAGUE_GAMES.clear();
+    }
 
     public static final class SportGame {
         public final String id;
@@ -1481,7 +1487,7 @@ public final class HubDataFetcher {
                 File diskFile = new File(cacheDir, md5(urlStr) + ".png");
                 Bitmap bmp = null;
                 if (diskFile.exists() && diskFile.length() > 64) {
-                    bmp = BitmapFactory.decodeFile(diskFile.getAbsolutePath());
+                    bmp = decodeLogoSampled(diskFile.getAbsolutePath(), 64, 64);
                 }
                 if (bmp == null) {
                     HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
@@ -1498,7 +1504,7 @@ public final class HubDataFetcher {
                                 fos.write(buf, 0, n);
                             }
                         }
-                        bmp = BitmapFactory.decodeFile(diskFile.getAbsolutePath());
+                        bmp = decodeLogoSampled(diskFile.getAbsolutePath(), 64, 64);
                     }
                 }
                 if (bmp != null) {
@@ -1591,14 +1597,28 @@ public final class HubDataFetcher {
         opts.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(path, opts);
         int sample = 1;
-        while ((opts.outWidth / sample) > reqW * 2 || (opts.outHeight / sample) > reqH * 2) {
+        while ((opts.outWidth / sample) > reqW || (opts.outHeight / sample) > reqH) {
             sample *= 2;
         }
         opts.inJustDecodeBounds = false;
         opts.inSampleSize = sample;
+        opts.inPreferredConfig = Bitmap.Config.RGB_565;
         Bitmap raw = BitmapFactory.decodeFile(path, opts);
         if (raw == null) return null;
-        return roundCenterCrop(raw, reqW, reqH, 24f);
+        return roundCenterCrop(raw, reqW, reqH, 20f);
+    }
+
+    private static Bitmap decodeLogoSampled(String path, int reqW, int reqH) {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(path, opts);
+        int sample = 1;
+        while ((opts.outWidth / sample) > reqW || (opts.outHeight / sample) > reqH) {
+            sample *= 2;
+        }
+        opts.inJustDecodeBounds = false;
+        opts.inSampleSize = sample;
+        return BitmapFactory.decodeFile(path, opts);
     }
 
     public static Bitmap roundCenterCrop(Bitmap src, int outW, int outH, float radiusPx) {

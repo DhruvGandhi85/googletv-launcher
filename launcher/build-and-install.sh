@@ -35,6 +35,7 @@ printf '%s\n' \
   "pm install -r --bypass-low-target-sdk-block /data/local/tmp/tvhome.apk" \
   "rm -f /data/local/tmp/tvhome.apk" \
   "pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted" \
+  "appops set com.gathin.tvhome SYSTEM_ALERT_WINDOW allow" \
   "pm disable-user --user 0 $STOCK_LAUNCHER" \
   "pm disable-user --user 0 com.google.android.tungsten.setupwraith" \
   "cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity" \
