@@ -3404,7 +3404,7 @@ public class MainActivity extends Activity {
         hsv.addView(inputRow);
 
         // 0. HDMI DualView PiP App & Input Setting
-        addInputTile(inputRow, "DualView PiP", "Pair & Swap 2 HDMIs", "⚡", true, "PiP APP", () -> {
+        addInputTile(inputRow, "DualView", null, "⚡", true, null, () -> {
             hideInputsPanel();
             Intent pipIntent = new Intent(this, com.gathin.tvhome.pip.PipSettingsActivity.class);
             pipIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -3412,7 +3412,7 @@ public class MainActivity extends Activity {
         });
 
         // 1. Google TV Main System Input
-        addInputTile(inputRow, "Google TV", "Built-in System TV", "🏠", true, "SYSTEM", () -> {
+        addInputTile(inputRow, "Google TV", null, "🏠", true, null, () -> {
             hideInputsPanel();
             launchGoogleTvLauncher();
         });
@@ -3506,14 +3506,16 @@ public class MainActivity extends Activity {
         titleTv.setPadding(0, dp(4), 0, 0);
         tile.addView(titleTv);
 
-        TextView badgeTv = new TextView(this);
-        badgeTv.setText(badgeText);
-        badgeTv.setTextColor(isActive ? 0xFF00E676 : 0x80FFFFFF);
-        badgeTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
-        badgeTv.setTypeface(android.graphics.Typeface.create("sans-serif-bold", android.graphics.Typeface.NORMAL));
-        badgeTv.setGravity(Gravity.CENTER);
-        badgeTv.setPadding(0, dp(2), 0, 0);
-        tile.addView(badgeTv);
+        if (badgeText != null && !badgeText.isEmpty()) {
+            TextView badgeTv = new TextView(this);
+            badgeTv.setText(badgeText);
+            badgeTv.setTextColor(isActive ? 0xFF00E676 : 0x80FFFFFF);
+            badgeTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
+            badgeTv.setTypeface(android.graphics.Typeface.create("sans-serif-bold", android.graphics.Typeface.NORMAL));
+            badgeTv.setGravity(Gravity.CENTER);
+            badgeTv.setPadding(0, dp(2), 0, 0);
+            tile.addView(badgeTv);
+        }
 
         tile.setOnClickListener(v -> onClick.run());
         tile.setOnFocusChangeListener((v, hasFocus) -> animateFocusCard(v, hasFocus));

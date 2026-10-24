@@ -139,34 +139,17 @@ public class PipSettingsActivity extends Activity {
         scroll.addView(container, new ScrollView.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        // Header Title
-        TextView pill = new TextView(this);
-        pill.setText("⚡ TV INPUT SETTING • PICTURE-IN-PICTURE");
-        pill.setTextColor(0xFF38BDF8);
-        pill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        pill.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        pill.setLetterSpacing(0.06f);
-        container.addView(pill);
-
         TextView title = new TextView(this);
-        title.setText("HDMI DualView & PiP");
+        title.setText("DualView");
         title.setTextColor(Color.WHITE);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
-        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        title.setPadding(0, dp(4), 0, dp(4));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
+        title.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        title.setPadding(0, 0, 0, dp(18));
         container.addView(title);
 
-        TextView sub = new TextView(this);
-        sub.setText("Pair any 2 HDMI inputs together. Enjoy your primary game or console full-screen with real-time PiP overlay and instant 1-click remote swapping.");
-        sub.setTextColor(0xFF94A3B8);
-        sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        sub.setPadding(0, 0, 0, dp(24));
-        container.addView(sub);
-
         // Setting Card 1: Primary Input A
-        inputAValueView = createSettingRow(container, "Primary Input (Display A)",
-                availableInputs.get(selectedIndexA).icon + "  " + availableInputs.get(selectedIndexA).name,
-                "Press OK to cycle HDMI port for Primary Screen",
+        inputAValueView = createSettingRow(container, "Primary Input",
+                availableInputs.get(selectedIndexA).name,
                 () -> {
                     selectedIndexA = (selectedIndexA + 1) % availableInputs.size();
                     if (selectedIndexA == selectedIndexB) selectedIndexA = (selectedIndexA + 1) % availableInputs.size();
@@ -175,9 +158,8 @@ public class PipSettingsActivity extends Activity {
                 });
 
         // Setting Card 2: Secondary Input B
-        inputBValueView = createSettingRow(container, "Secondary Input (Display B / PiP)",
-                availableInputs.get(selectedIndexB).icon + "  " + availableInputs.get(selectedIndexB).name,
-                "Press OK to cycle HDMI port for PiP & Quick-Swap target",
+        inputBValueView = createSettingRow(container, "Secondary Input",
+                availableInputs.get(selectedIndexB).name,
                 () -> {
                     selectedIndexB = (selectedIndexB + 1) % availableInputs.size();
                     if (selectedIndexB == selectedIndexA) selectedIndexB = (selectedIndexB + 1) % availableInputs.size();
@@ -186,9 +168,8 @@ public class PipSettingsActivity extends Activity {
                 });
 
         // Setting Card 3: PiP Position
-        cornerValueView = createSettingRow(container, "PiP Corner Position",
+        cornerValueView = createSettingRow(container, "Position",
                 getCornerName(selectedCorner),
-                "Location of the floating overlay card",
                 () -> {
                     selectedCorner = (selectedCorner + 1) % 4;
                     updateLabels();
@@ -196,9 +177,8 @@ public class PipSettingsActivity extends Activity {
                 });
 
         // Setting Card 4: Remote Hotkey
-        hotkeyValueView = createSettingRow(container, "Instant Swap Remote Button",
+        hotkeyValueView = createSettingRow(container, "Swap Key",
                 getHotkeyName(selectedHotkey),
-                "Remote button to swap inputs back and forth instantly while playing",
                 () -> {
                     selectedHotkey = (selectedHotkey + 1) % 3;
                     updateLabels();
@@ -235,7 +215,7 @@ public class PipSettingsActivity extends Activity {
         setContentView(root);
     }
 
-    private TextView createSettingRow(ViewGroup parent, String title, String value, String hint, Runnable onClick) {
+    private TextView createSettingRow(ViewGroup parent, String title, String value, Runnable onClick) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -243,51 +223,38 @@ public class PipSettingsActivity extends Activity {
         row.setClickable(true);
 
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0x331E293B);
-        bg.setCornerRadius(dp(12));
-        bg.setStroke(dp(1), 0x22FFFFFF);
+        bg.setColor(0x18FFFFFF);
+        bg.setCornerRadius(dp(8));
         row.setBackground(bg);
-        row.setPadding(dp(16), dp(12), dp(16), dp(12));
+        row.setPadding(dp(18), dp(12), dp(18), dp(12));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.bottomMargin = dp(10);
+        lp.bottomMargin = dp(6);
         row.setLayoutParams(lp);
-
-        LinearLayout textCol = new LinearLayout(this);
-        textCol.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        row.addView(textCol, textLp);
 
         TextView titleTv = new TextView(this);
         titleTv.setText(title);
-        titleTv.setTextColor(0xFFE2E8F0);
+        titleTv.setTextColor(Color.WHITE);
         titleTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        titleTv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        textCol.addView(titleTv);
-
-        TextView hintTv = new TextView(this);
-        hintTv.setText(hint);
-        hintTv.setTextColor(0xFF64748B);
-        hintTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
-        textCol.addView(hintTv);
+        titleTv.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        row.addView(titleTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         TextView valueTv = new TextView(this);
         valueTv.setText(value);
         valueTv.setTextColor(0xFF38BDF8);
         valueTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        valueTv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        valueTv.setGravity(Gravity.END);
+        valueTv.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
         row.addView(valueTv);
 
         row.setOnFocusChangeListener((v, hasFocus) -> {
             GradientDrawable d = (GradientDrawable) v.getBackground();
             if (hasFocus) {
-                d.setColor(0x5538BDF8);
-                d.setStroke(dp(2), 0xFFFFFFFF);
+                d.setColor(0x240284C7);
+                d.setStroke(dp(2), 0xFF38BDF8);
             } else {
-                d.setColor(0x331E293B);
-                d.setStroke(dp(1), 0x22FFFFFF);
+                d.setColor(0x10FFFFFF);
+                d.setStroke(0, 0);
             }
         });
 

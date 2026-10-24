@@ -143,38 +143,12 @@ public class PipOverlayService extends Service {
         content.setOrientation(LinearLayout.VERTICAL);
         root.addView(content);
 
-        // Header Row: Badge & Current Mode
-        LinearLayout headerRow = new LinearLayout(this);
-        headerRow.setOrientation(LinearLayout.HORIZONTAL);
-        headerRow.setGravity(Gravity.CENTER_VERTICAL);
-        content.addView(headerRow);
-
-        TextView badge = new TextView(this);
-        badge.setText("⚡ DUALVIEW PiP");
-        badge.setTextColor(0xFF38BDF8);
-        badge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f);
-        badge.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        badge.setLetterSpacing(0.06f);
-        headerRow.addView(badge);
-
-        View spacer = new View(this);
-        LinearLayout.LayoutParams spLp = new LinearLayout.LayoutParams(0, 1, 1f);
-        headerRow.addView(spacer, spLp);
-
-        TextView statusBadge = new TextView(this);
-        statusBadge.setText("LIVE OVERLAY");
-        statusBadge.setTextColor(0xFF4ADE80);
-        statusBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
-        statusBadge.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        headerRow.addView(statusBadge);
-
-        // Title View: Secondary Input / Paired Feed
+        // Title View: Secondary Input
         titleView = new TextView(this);
         titleView.setTextColor(Color.WHITE);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f);
-        titleView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+        titleView.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
         titleView.setSingleLine(true);
-        titleView.setPadding(0, dp(4), 0, 0);
         content.addView(titleView);
 
         // Subtitle View: State / Target Input
@@ -184,37 +158,37 @@ public class PipOverlayService extends Service {
         subView.setSingleLine(true);
         content.addView(subView);
 
-        // Live Score / Stream ticker box
+        // Live Score ticker box
         scoreView = new TextView(this);
         scoreView.setTextColor(0xFFF1F5F9);
         scoreView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
-        scoreView.setBackgroundColor(0x331E293B);
+        scoreView.setBackgroundColor(0x221E293B);
         scoreView.setPadding(dp(8), dp(4), dp(8), dp(4));
         LinearLayout.LayoutParams scLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        scLp.topMargin = dp(6);
-        scLp.bottomMargin = dp(8);
+        scLp.topMargin = dp(4);
+        scLp.bottomMargin = dp(6);
         scoreView.setLayoutParams(scLp);
         content.addView(scoreView);
 
-        // Action Buttons Row: [ ⇄ SWAP HDMI ] [ ⛶ MOVE ] [ ✕ CLOSE ]
+        // Action Buttons Row: [ Swap ] [ Move ] [ ✕ ]
         LinearLayout btnRow = new LinearLayout(this);
         btnRow.setOrientation(LinearLayout.HORIZONTAL);
         btnRow.setGravity(Gravity.CENTER_VERTICAL);
         content.addView(btnRow);
 
-        btnSwap = createActionButton("⇄ Swap Input", 0xFF0284C7, () -> swapInputs(this));
-        LinearLayout.LayoutParams swapLp = new LinearLayout.LayoutParams(0, dp(30), 1.2f);
+        btnSwap = createActionButton("Swap", 0xFF0284C7, () -> swapInputs(this));
+        LinearLayout.LayoutParams swapLp = new LinearLayout.LayoutParams(0, dp(28), 1.2f);
         swapLp.rightMargin = dp(6);
         btnRow.addView(btnSwap, swapLp);
 
-        btnMove = createActionButton("⛶ Move", 0xFF334155, this::cycleCorner);
-        LinearLayout.LayoutParams moveLp = new LinearLayout.LayoutParams(0, dp(30), 0.8f);
+        btnMove = createActionButton("Move", 0xFF334155, this::cycleCorner);
+        LinearLayout.LayoutParams moveLp = new LinearLayout.LayoutParams(0, dp(28), 0.8f);
         moveLp.rightMargin = dp(6);
         btnRow.addView(btnMove, moveLp);
 
         btnClose = createActionButton("✕", 0xFF475569, () -> stop(this));
-        LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(dp(32), dp(30));
+        LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(dp(30), dp(28));
         btnRow.addView(btnClose, closeLp);
 
         overlayView = root;
