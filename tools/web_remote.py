@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Google TV Web Remote & Interactive Master Control Center.
 
-Consolidated tab/subtab architecture following Jakub Krehel's "Less is More" minimalism:
+Consolidated tab and subtab architecture following Jakub Krehel's "Less is More" minimalism:
 - English-only interface
-- Tailored specifically for Google TV
-- No decorative eyebrow badges, kicker chips, or explanatory microcopy
-- Clean Apple-style layout: primary tabs consolidated with intuitive subtabs
-  - Remote: Keypad, Screen, Input
-  - Launcher: Layout, Apps
-  - Storage: Files, Wallpaper
-  - System: Health, Debloat, Tools
+- Built specifically for Google TV
+- Dual-column interactive remote with live screen mirror touch-to-click alongside ergonomic keypad
+- All original menus preserved in clean subtabs:
+  - Remote: Live Screen Mirror, Touch Passthrough, Text & URL Input, HDMI Switcher, Full Remote D-Pad
+  - Launcher: Layout (Visual Mockup, Dock Apps, Grid, Push to TV) & Apps (List, Filter, Actions, APK Install)
+  - Storage: Files (Explorer, Download, Delete, Open on TV) & Wallpaper (Upload & Stage)
+  - System: Debloat (Google TV Presets), Health (Meters & Telemetry), Automation (Sleep Timer, Night Mode), Setup (Speed, Reboot, ADB Console)
+- No gratuitous text/additions or eyebrow elements
 """
 
 import argparse
@@ -72,7 +73,6 @@ KEYCODES = {
     "NUM_9": 16,
 }
 
-# Curated Google TV debloat presets
 PRESETS = {
     "tcl": {
         "name": "TCL Google TV",
@@ -198,7 +198,7 @@ HTML_MASTER = """<!DOCTYPE html>
 
     header {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1240px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -207,7 +207,7 @@ HTML_MASTER = """<!DOCTYPE html>
     }
     .brand {
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       letter-spacing: -0.01em;
       color: var(--ink);
     }
@@ -244,10 +244,10 @@ HTML_MASTER = """<!DOCTYPE html>
       box-shadow: 0 0 6px var(--danger);
     }
 
-    /* Primary Navigation Tabs */
+    /* Navigation Container */
     .nav-container {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1240px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -316,7 +316,7 @@ HTML_MASTER = """<!DOCTYPE html>
     /* Main Container */
     main {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1240px;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -328,6 +328,19 @@ HTML_MASTER = """<!DOCTYPE html>
       gap: 14px;
     }
     .tab-panel.active { display: flex; }
+
+    /* Dual-Column Remote Layout: Screen on left, Remote on right */
+    .remote-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    @media (min-width: 900px) {
+      .remote-grid {
+        grid-template-columns: minmax(0, 1.3fr) 360px;
+      }
+    }
 
     /* Cards */
     .card {
@@ -398,18 +411,6 @@ HTML_MASTER = """<!DOCTYPE html>
     .grid-6 { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
 
     /* Remote D-Pad */
-    .remote-wrap {
-      display: flex;
-      justify-content: center;
-      width: 100%;
-    }
-    .remote-box {
-      width: 100%;
-      max-width: 360px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
     .dpad-container {
       position: relative;
       width: 220px;
@@ -501,8 +502,6 @@ HTML_MASTER = """<!DOCTYPE html>
     /* Screen Mirror */
     .screen-container {
       width: 100%;
-      max-width: 840px;
-      margin: 0 auto;
       aspect-ratio: 16 / 9;
       background: #000;
       border-radius: 10px;
@@ -610,7 +609,7 @@ HTML_MASTER = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 480px;
+      max-height: 520px;
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -755,7 +754,7 @@ HTML_MASTER = """<!DOCTYPE html>
     </div>
   </header>
 
-  <!-- CONSOLIDATED PRIMARY TABS & SUBTABS -->
+  <!-- NAVIGATION TABS & SUBTABS -->
   <div class="nav-container">
     <nav class="main-tabs" role="tablist">
       <button class="main-tab-btn active" data-tab="remote" onclick="switchMainTab('remote')">Remote</button>
@@ -763,13 +762,6 @@ HTML_MASTER = """<!DOCTYPE html>
       <button class="main-tab-btn" data-tab="storage" onclick="switchMainTab('storage')">Storage</button>
       <button class="main-tab-btn" data-tab="system" onclick="switchMainTab('system')">System</button>
     </nav>
-
-    <!-- Subtabs for Remote -->
-    <div class="subtabs-bar active" data-parent="remote">
-      <button class="subtab-btn active" data-sub="keypad" onclick="switchSubTab('remote', 'keypad')">Keypad</button>
-      <button class="subtab-btn" data-sub="screen" onclick="switchSubTab('remote', 'screen')">Screen</button>
-      <button class="subtab-btn" data-sub="input" onclick="switchSubTab('remote', 'input')">Input</button>
-    </div>
 
     <!-- Subtabs for Launcher -->
     <div class="subtabs-bar" data-parent="launcher">
@@ -785,17 +777,65 @@ HTML_MASTER = """<!DOCTYPE html>
 
     <!-- Subtabs for System -->
     <div class="subtabs-bar" data-parent="system">
-      <button class="subtab-btn active" data-sub="health" onclick="switchSubTab('system', 'health')">Health</button>
-      <button class="subtab-btn" data-sub="debloat" onclick="switchSubTab('system', 'debloat')">Debloat</button>
-      <button class="subtab-btn" data-sub="tools" onclick="switchSubTab('system', 'tools')">Tools</button>
+      <button class="subtab-btn active" data-sub="debloat" onclick="switchSubTab('system', 'debloat')">Debloat</button>
+      <button class="subtab-btn" data-sub="health" onclick="switchSubTab('system', 'health')">Health</button>
+      <button class="subtab-btn" data-sub="auto" onclick="switchSubTab('system', 'auto')">Automation</button>
+      <button class="subtab-btn" data-sub="setup" onclick="switchSubTab('system', 'setup')">Setup</button>
     </div>
   </div>
 
   <main>
-    <!-- ================= 1. REMOTE -> KEYPAD ================= -->
-    <section class="tab-panel active" id="panel-remote-keypad">
-      <div class="remote-wrap">
-        <div class="remote-box">
+    <!-- ================= 1. REMOTE: DUAL-COLUMN WITH SCREEN MIRROR + REMOTE ================= -->
+    <section class="tab-panel active" id="panel-remote">
+      <div class="remote-grid">
+        <!-- LEFT COLUMN: LIVE SCREEN & INPUTS -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <!-- Screen Mirror -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Screen Mirror</span>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm" onclick="refreshScreen()">Refresh</button>
+                <button class="btn btn-sm" id="autoBtn" onclick="toggleAutoRefresh()">Auto</button>
+                <a class="btn btn-sm" id="dlBtn" href="/api/screenshot" download="screen.png" style="text-decoration:none;">Save</a>
+              </div>
+            </div>
+            <div class="screen-container" id="screenContainer" onclick="handleScreenTap(event)">
+              <img id="screenImg" class="screen-img" src="/api/screenshot" alt="TV Screen Mirror">
+            </div>
+          </div>
+
+          <!-- Type Text -->
+          <div class="card">
+            <span class="card-title">Type Text</span>
+            <div class="typing-box">
+              <input type="text" id="typeInput" class="text-input" placeholder="Type text..." onkeydown="if(event.key==='Enter') sendText()">
+              <button class="btn btn-primary" onclick="sendText()">Send</button>
+            </div>
+          </div>
+
+          <!-- Open URL -->
+          <div class="card">
+            <span class="card-title">Open URL</span>
+            <div class="typing-box">
+              <input type="text" id="urlInput" class="text-input" placeholder="https://..." onkeydown="if(event.key==='Enter') sendUrl()">
+              <button class="btn btn-primary" onclick="sendUrl()">Open</button>
+            </div>
+          </div>
+
+          <!-- HDMI Source Switcher -->
+          <div class="card">
+            <span class="card-title">HDMI Inputs</span>
+            <div class="grid-3">
+              <button class="btn" onclick="launchInput('HDMI 1')">HDMI 1</button>
+              <button class="btn" onclick="launchInput('HDMI 2')">HDMI 2</button>
+              <button class="btn" onclick="launchInput('AV')">Live TV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: ERGONOMIC REMOTE -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
           <div class="card">
             <div class="grid-3">
               <button class="btn btn-danger" onclick="sendKey('POWER')">Power</button>
@@ -803,6 +843,7 @@ HTML_MASTER = """<!DOCTYPE html>
               <button class="btn" onclick="sendKey('MENU')">Menu</button>
             </div>
 
+            <!-- D-Pad with Central OK -->
             <div class="dpad-container">
               <button class="dpad-btn dpad-up" data-k="UP">▲</button>
               <button class="dpad-btn dpad-left" data-k="LEFT">◀</button>
@@ -816,6 +857,7 @@ HTML_MASTER = """<!DOCTYPE html>
               <button class="btn" onclick="sendKey('HOME')">Home</button>
             </div>
 
+            <!-- Volume & Channel Pills -->
             <div class="cluster">
               <div class="pill">
                 <button onclick="sendKey('VOL_UP')">▲</button>
@@ -831,6 +873,7 @@ HTML_MASTER = """<!DOCTYPE html>
 
             <button class="btn" onclick="sendKey('MUTE')">Mute</button>
 
+            <!-- Media Playback -->
             <div class="grid-4">
               <button class="btn" onclick="sendKey('PREV')">⏮</button>
               <button class="btn" onclick="sendKey('REWIND')">⏪</button>
@@ -838,6 +881,7 @@ HTML_MASTER = """<!DOCTYPE html>
               <button class="btn" onclick="sendKey('FAST_FORWARD')">⏩</button>
             </div>
 
+            <!-- Color Keys -->
             <div class="grid-4">
               <button class="btn color-btn btn-red" onclick="sendKey('RED')">●</button>
               <button class="btn color-btn btn-green" onclick="sendKey('GREEN')">●</button>
@@ -845,6 +889,7 @@ HTML_MASTER = """<!DOCTYPE html>
               <button class="btn color-btn btn-blue" onclick="sendKey('BLUE')">●</button>
             </div>
 
+            <!-- Numpad Toggle -->
             <div class="card-head">
               <span class="card-title">Numeric Pad</span>
               <span style="font-size:0.75rem; cursor:pointer; color:var(--accent);" onclick="toggleNumpad()">Toggle ▾</span>
@@ -868,52 +913,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 2. REMOTE -> SCREEN ================= -->
-    <section class="tab-panel" id="panel-remote-screen">
-      <div class="card">
-        <div class="card-head">
-          <span class="card-title">Screen Mirror</span>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-sm" onclick="refreshScreen()">Refresh</button>
-            <button class="btn btn-sm" id="autoBtn" onclick="toggleAutoRefresh()">Auto</button>
-            <a class="btn btn-sm" id="dlBtn" href="/api/screenshot" download="screen.png" style="text-decoration:none;">Save</a>
-          </div>
-        </div>
-        <div class="screen-container" id="screenContainer" onclick="handleScreenTap(event)">
-          <img id="screenImg" class="screen-img" src="/api/screenshot" alt="TV Screen Mirror">
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= 3. REMOTE -> INPUT ================= -->
-    <section class="tab-panel" id="panel-remote-input">
-      <div class="card">
-        <span class="card-title">Type Text</span>
-        <div class="typing-box">
-          <input type="text" id="typeInput" class="text-input" placeholder="Type text..." onkeydown="if(event.key==='Enter') sendText()">
-          <button class="btn btn-primary" onclick="sendText()">Send</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <span class="card-title">Open URL</span>
-        <div class="typing-box">
-          <input type="text" id="urlInput" class="text-input" placeholder="https://..." onkeydown="if(event.key==='Enter') sendUrl()">
-          <button class="btn btn-primary" onclick="sendUrl()">Open</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <span class="card-title">HDMI Inputs</span>
-        <div class="grid-3">
-          <button class="btn" onclick="launchInput('HDMI 1')">HDMI 1</button>
-          <button class="btn" onclick="launchInput('HDMI 2')">HDMI 2</button>
-          <button class="btn" onclick="launchInput('AV')">Live TV</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= 4. LAUNCHER -> LAYOUT ================= -->
+    <!-- ================= 2. LAUNCHER -> LAYOUT ================= -->
     <section class="tab-panel" id="panel-launcher-layout">
       <div class="tv-mockup">
         <div class="mock-top">
@@ -968,7 +968,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 5. LAUNCHER -> APPS ================= -->
+    <!-- ================= 3. LAUNCHER -> APPS ================= -->
     <section class="tab-panel" id="panel-launcher-apps">
       <div class="card">
         <div class="card-head">
@@ -992,7 +992,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 6. STORAGE -> FILES ================= -->
+    <!-- ================= 4. STORAGE -> FILES ================= -->
     <section class="tab-panel" id="panel-storage-files">
       <div class="card">
         <div class="card-head">
@@ -1022,7 +1022,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 7. STORAGE -> WALLPAPER ================= -->
+    <!-- ================= 5. STORAGE -> WALLPAPER ================= -->
     <section class="tab-panel" id="panel-storage-wallpaper">
       <div class="card">
         <span class="card-title">Wallpaper</span>
@@ -1033,7 +1033,30 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 8. SYSTEM -> HEALTH ================= -->
+    <!-- ================= 6. SYSTEM -> DEBLOAT ================= -->
+    <section class="tab-panel" id="panel-system-debloat">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Google TV Debloat</span>
+          <select id="presetBrandSelect" class="text-input" style="width:230px; padding:6px 10px;" onchange="loadPresetDebloat()">
+            <option value="tcl">TCL Google TV</option>
+            <option value="sony">Sony BRAVIA Google TV</option>
+            <option value="common">Google TV (Common)</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <button class="btn btn-primary" onclick="applyDebloatPreset()">Apply Debloat</button>
+          <button class="btn btn-danger" onclick="restoreAllDebloat()">Restore All</button>
+        </div>
+
+        <div class="list-container" id="debloatPresetList">
+          <div style="text-align:center; padding:20px; color:var(--muted);">Loading packages...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 7. SYSTEM -> HEALTH ================= -->
     <section class="tab-panel" id="panel-system-health">
       <div class="card">
         <div class="card-head">
@@ -1087,40 +1110,8 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 9. SYSTEM -> DEBLOAT ================= -->
-    <section class="tab-panel" id="panel-system-debloat">
-      <div class="card">
-        <div class="card-head">
-          <span class="card-title">Google TV Debloat</span>
-          <select id="presetBrandSelect" class="text-input" style="width:230px; padding:6px 10px;" onchange="loadPresetDebloat()">
-            <option value="tcl">TCL Google TV</option>
-            <option value="sony">Sony BRAVIA Google TV</option>
-            <option value="common">Google TV (Common)</option>
-          </select>
-        </div>
-
-        <div class="grid-2">
-          <button class="btn btn-primary" onclick="applyDebloatPreset()">Apply Debloat</button>
-          <button class="btn btn-danger" onclick="restoreAllDebloat()">Restore All</button>
-        </div>
-
-        <div class="list-container" id="debloatPresetList">
-          <div style="text-align:center; padding:20px; color:var(--muted);">Loading packages...</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= 10. SYSTEM -> TOOLS ================= -->
-    <section class="tab-panel" id="panel-system-tools">
-      <div class="card">
-        <span class="card-title">Animation Scale</span>
-        <div class="grid-3">
-          <button class="btn" onclick="setAnimationScale(0.0)">Instant (0.0x)</button>
-          <button class="btn" onclick="setAnimationScale(0.5)">Snappy (0.5x)</button>
-          <button class="btn" onclick="setAnimationScale(1.0)">Stock (1.0x)</button>
-        </div>
-      </div>
-
+    <!-- ================= 8. SYSTEM -> AUTOMATION ================= -->
+    <section class="tab-panel" id="panel-system-auto">
       <div class="card">
         <span class="card-title">Sleep Timer</span>
         <div id="timerCountdown" style="font-size:1.8rem; font-weight:700; text-align:center; color:var(--accent); margin:8px 0;">Off</div>
@@ -1140,6 +1131,18 @@ HTML_MASTER = """<!DOCTYPE html>
         <div class="grid-2">
           <button class="btn" onclick="sendKey('SLEEP')">Screen Off</button>
           <button class="btn" onclick="sendKey('WAKEUP')">Wake Display</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 9. SYSTEM -> SETUP ================= -->
+    <section class="tab-panel" id="panel-system-setup">
+      <div class="card">
+        <span class="card-title">Animation Scale</span>
+        <div class="grid-3">
+          <button class="btn" onclick="setAnimationScale(0.0)">Instant (0.0x)</button>
+          <button class="btn" onclick="setAnimationScale(0.5)">Snappy (0.5x)</button>
+          <button class="btn" onclick="setAnimationScale(1.0)">Stock (1.0x)</button>
         </div>
       </div>
 
@@ -1168,10 +1171,9 @@ HTML_MASTER = """<!DOCTYPE html>
   <script>
     let activeMainTab = 'remote';
     let activeSubTabs = {
-      remote: 'keypad',
       launcher: 'layout',
       storage: 'files',
-      system: 'health'
+      system: 'debloat'
     };
 
     let currentPath = '/sdcard';
@@ -1196,7 +1198,14 @@ HTML_MASTER = """<!DOCTYPE html>
       document.querySelectorAll('.subtabs-bar').forEach(sb => {
         sb.classList.toggle('active', sb.dataset.parent === mainTabId);
       });
-      switchSubTab(mainTabId, activeSubTabs[mainTabId]);
+
+      if (mainTabId === 'remote') {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('panel-remote').classList.add('active');
+        refreshScreen();
+      } else {
+        switchSubTab(mainTabId, activeSubTabs[mainTabId]);
+      }
     }
 
     function switchSubTab(mainTabId, subTabId) {
@@ -1211,12 +1220,11 @@ HTML_MASTER = """<!DOCTYPE html>
       const target = document.getElementById(`panel-${mainTabId}-${subTabId}`);
       if (target) target.classList.add('active');
 
-      if (mainTabId === 'remote' && subTabId === 'screen') refreshScreen();
       if (mainTabId === 'launcher' && subTabId === 'layout') loadLayout();
       if (mainTabId === 'launcher' && subTabId === 'apps') loadApps();
       if (mainTabId === 'storage' && subTabId === 'files') loadFiles(currentPath);
-      if (mainTabId === 'system' && subTabId === 'health') loadHealth();
       if (mainTabId === 'system' && subTabId === 'debloat') loadPresetDebloat();
+      if (mainTabId === 'system' && subTabId === 'health') loadHealth();
     }
 
     function toggleNumpad() {
@@ -1821,7 +1829,7 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
-    // Tools & Sleep Timer
+    // Automation: Sleep Timer
     function setSleepTimer(mins) {
       clearInterval(sleepTimerInterval);
       if (mins <= 0) {
@@ -1851,6 +1859,7 @@ HTML_MASTER = """<!DOCTYPE html>
       document.getElementById('timerCountdown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
+    // Setup: Animation Speeds
     async function setAnimationScale(scale) {
       showToast(`Setting scale to ${scale}x...`);
       try {
@@ -1865,6 +1874,7 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
+    // Setup: Reboot
     async function rebootTv(mode) {
       if (!confirm(`Reboot TV (${mode})?`)) return;
       showToast(`Rebooting (${mode})...`);
@@ -1879,6 +1889,7 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
+    // Setup: Shell
     async function runShell() {
       const input = document.getElementById('shellInput');
       const cmd = input.value.trim();
@@ -1900,7 +1911,7 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
-    // PC Keyboard Shortcuts
+    // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
       if (document.activeElement.tagName === 'INPUT') return;
       if (e.key === 'ArrowUp') { e.preventDefault(); sendKey('UP'); }
