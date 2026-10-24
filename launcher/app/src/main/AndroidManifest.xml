@@ -87,27 +87,6 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <!-- HDMI DualView PiP App & Input Setting -->
-        <activity
-            android:name=".pip.PipSettingsActivity"
-            android:label="HDMI DualView PiP"
-            android:banner="@drawable/banner"
-            android:icon="@mipmap/ic_launcher"
-            android:theme="@style/Theme.TvHome"
-            android:exported="true"
-            android:screenOrientation="landscape">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <!-- Floating PiP Overlay Service -->
-        <service
-            android:name=".pip.PipOverlayService"
-            android:exported="true"
-            android:foregroundServiceType="specialUse" />
 
         <!-- Standalone Launcher Settings App -->
         <activity

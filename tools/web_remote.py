@@ -1185,20 +1185,84 @@ HTML_MASTER = """<!DOCTYPE html>
       gap: 8px;
       align-items: center;
     }
-    .tile {
-      background: #1e2633;
-      border: 1px solid #323d4e;
+    .dock-tile {
+      background: #181d26;
+      border: 1px solid #242c3b;
       border-radius: 8px;
-      padding: 7px 11px;
-      font-size: 0.8rem;
-      font-weight: 600;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      font-weight: 500;
       color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+      transition: border-color 0.15s ease;
+    }
+    .dock-tile:hover {
+      border-color: #3b475a;
+    }
+    .dock-tile-title {
       display: flex;
       align-items: center;
-      gap: 8px;
-      user-select: none;
+      gap: 6px;
     }
-    .tile-del { font-size: 0.82rem; color: var(--danger); cursor: pointer; padding: 0 4px; }
+    .dock-tile-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 6px;
+    }
+    .dock-tile-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.72rem;
+      padding: 3px 6px;
+      line-height: 1;
+      transition: all 0.15s ease;
+    }
+    .dock-tile-btn:hover:not(:disabled) {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .dock-tile-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+    .dock-tile-btn.dock-tile-del:hover {
+      color: #fff;
+      background: rgba(239, 68, 68, 0.3);
+      border-color: var(--danger);
+    }
+
+    .app-pick-btn {
+      background: #181d26;
+      border: 1px solid #242c3b;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: #c9d1d9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+    .app-pick-btn:hover:not(.in-dock) {
+      border-color: var(--accent);
+      color: #fff;
+      background: #1e2633;
+    }
+    .app-pick-btn.in-dock {
+      opacity: 0.45;
+      border-color: #1a222e;
+      cursor: default;
+    }
 
     /* Lists */
     .list-container {
@@ -1489,7 +1553,6 @@ HTML_MASTER = """<!DOCTYPE html>
     <div class="subtabs-bar active" data-parent="remote">
       <button class="subtab-btn active" data-sub="tcl" onclick="switchSubTab('remote', 'tcl')">TCL Voice</button>
       <button class="subtab-btn" data-sub="classic" onclick="switchSubTab('remote', 'classic')">Classic TV</button>
-      <button class="subtab-btn" data-sub="compact" onclick="switchSubTab('remote', 'compact')">Compact</button>
     </div>
 
     <!-- Subtabs for Launcher -->
@@ -1514,7 +1577,6 @@ HTML_MASTER = """<!DOCTYPE html>
     <div class="subtabs-bar" data-parent="system">
       <button class="subtab-btn active" data-sub="debloat" onclick="switchSubTab('system', 'debloat')">Debloat</button>
       <button class="subtab-btn" data-sub="health" onclick="switchSubTab('system', 'health')">Health</button>
-      <button class="subtab-btn" data-sub="auto" onclick="switchSubTab('system', 'auto')">Automation</button>
       <button class="subtab-btn" data-sub="setup" onclick="switchSubTab('system', 'setup')">Setup</button>
     </div>
   </div>
@@ -1825,137 +1887,25 @@ HTML_MASTER = """<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- 3. COMPACT ERGONOMIC REMOTE -->
-          <div id="remote-view-compact" class="remote-model-view" style="display:none; width:100%;">
-            <div class="card" style="width:100%;">
-              <div class="grid-3">
-                <button class="btn btn-danger" onclick="sendKey('POWER')">Power</button>
-                <button class="btn" onclick="sendKey('SETTINGS')">Settings</button>
-                <button class="btn" onclick="sendKey('MENU')">Menu</button>
-              </div>
-
-              <!-- D-Pad with Central OK -->
-              <div class="dpad-container">
-                <button class="dpad-btn dpad-up" data-k="UP">▲</button>
-                <button class="dpad-btn dpad-left" data-k="LEFT">◀</button>
-                <button class="dpad-btn dpad-center" data-k="OK">OK</button>
-                <button class="dpad-btn dpad-right" data-k="RIGHT">▶</button>
-                <button class="dpad-btn dpad-down" data-k="DOWN">▼</button>
-              </div>
-
-              <div class="grid-2">
-                <button class="btn" onclick="sendKey('BACK')">Back</button>
-                <button class="btn" onclick="sendKey('HOME')">Home</button>
-              </div>
-
-              <!-- Volume & Channel Pills -->
-              <div class="cluster">
-                <div class="pill">
-                  <button onclick="sendKey('VOL_UP')">▲</button>
-                  <span>VOL</span>
-                  <button onclick="sendKey('VOL_DOWN')">▼</button>
-                </div>
-                <div class="pill">
-                  <button onclick="sendKey('CHANNEL_UP')">▲</button>
-                  <span>CH</span>
-                  <button onclick="sendKey('CHANNEL_DOWN')">▼</button>
-                </div>
-              </div>
-
-              <button class="btn" onclick="sendKey('MUTE')">Mute</button>
-
-              <!-- Media Playback -->
-              <div class="grid-4">
-                <button class="btn" onclick="sendKey('PREV')">⏮</button>
-                <button class="btn" onclick="sendKey('REWIND')">⏪</button>
-                <button class="btn" onclick="sendKey('PLAY_PAUSE')">⏯</button>
-                <button class="btn" onclick="sendKey('FAST_FORWARD')">⏩</button>
-              </div>
-
-              <!-- Color Keys -->
-              <div class="grid-4">
-                <button class="btn color-btn btn-red" onclick="sendKey('RED')">●</button>
-                <button class="btn color-btn btn-green" onclick="sendKey('GREEN')">●</button>
-                <button class="btn color-btn btn-yellow" onclick="sendKey('YELLOW')">●</button>
-                <button class="btn color-btn btn-blue" onclick="sendKey('BLUE')">●</button>
-              </div>
-
-              <!-- Numpad Toggle -->
-              <div class="card-head">
-                <span class="card-title">Numeric Pad</span>
-                <span style="font-size:0.75rem; cursor:pointer; color:var(--accent);" onclick="toggleNumpad()">Toggle ▾</span>
-              </div>
-              <div id="numpadGrid" class="grid-3" style="display:none;">
-                <button class="btn" onclick="sendKey('NUM_1')">1</button>
-                <button class="btn" onclick="sendKey('NUM_2')">2</button>
-                <button class="btn" onclick="sendKey('NUM_3')">3</button>
-                <button class="btn" onclick="sendKey('NUM_4')">4</button>
-                <button class="btn" onclick="sendKey('NUM_5')">5</button>
-                <button class="btn" onclick="sendKey('NUM_6')">6</button>
-                <button class="btn" onclick="sendKey('NUM_7')">7</button>
-                <button class="btn" onclick="sendKey('NUM_8')">8</button>
-                <button class="btn" onclick="sendKey('NUM_9')">9</button>
-                <button class="btn" onclick="sendKey('INFO')">Info</button>
-                <button class="btn" onclick="sendKey('NUM_0')">0</button>
-                <button class="btn" onclick="sendKey('GUIDE')">Guide</button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
 
     <!-- ================= 2. LAUNCHER -> LAYOUT ================= -->
     <section class="tab-panel" id="panel-launcher-layout">
-      <div class="tv-mockup">
-        <div class="mock-top">
-          <div>
-            <div class="mock-greet" id="mockGreetingText">GOOD EVENING, DHRUV</div>
-            <div class="mock-clock" id="mockClock">21:00</div>
-          </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">TV Dock Apps</span>
+          <button class="btn btn-primary" onclick="pushLayoutToTv()">Push to TV</button>
         </div>
-        <div>
-          <span class="card-title" style="margin-bottom:8px; display:block;">Dock Apps</span>
-          <div class="dock-zone" id="dockZone"></div>
-        </div>
+        <div class="dock-zone" id="dockZone"></div>
       </div>
 
       <div class="card">
         <div class="card-head">
-          <span class="card-title">Appearance & Grid</span>
-          <button class="btn btn-primary" onclick="pushLayoutToTv()">Push to TV</button>
+          <span class="card-title">Available Apps</span>
+          <input type="text" id="availableAppsFilter" class="text-input" style="padding:4px 10px; font-size:0.8rem; width:180px;" placeholder="Filter apps..." oninput="filterAvailableApps()">
         </div>
-
-        <div class="grid-3">
-          <div>
-            <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Greeting Name</label>
-            <input type="text" id="cfgGreeting" class="text-input" placeholder="Dhruv" oninput="updateMockup()">
-          </div>
-          <div>
-            <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Grid Columns</label>
-            <input type="number" id="cfgColumns" class="text-input" min="3" max="8" value="4">
-          </div>
-          <div>
-            <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Sky Intensity (%)</label>
-            <input type="range" id="cfgSky" min="0" max="100" value="50" style="width:100%; accent-color:var(--accent);">
-          </div>
-        </div>
-
-        <div class="grid-3">
-          <label class="btn" style="cursor:pointer; justify-content:flex-start;">
-            <input type="checkbox" id="cfgShowStats" style="accent-color:var(--accent); margin-right:8px;"> CPU/RAM Under Clock
-          </label>
-          <label class="btn" style="cursor:pointer; justify-content:flex-start;">
-            <input type="checkbox" id="cfgReducedMotion" style="accent-color:var(--accent); margin-right:8px;"> Reduced Motion
-          </label>
-          <label class="btn" style="cursor:pointer; justify-content:flex-start;">
-            <input type="checkbox" id="cfgRoundButtons" style="accent-color:var(--accent); margin-right:8px;"> Round Top Buttons
-          </label>
-        </div>
-      </div>
-
-      <div class="card">
-        <span class="card-title">Available Apps</span>
         <div class="grid-6" id="availableAppsGrid"></div>
       </div>
     </section>
@@ -2191,41 +2141,8 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 10. SYSTEM -> AUTOMATION ================= -->
-    <section class="tab-panel" id="panel-system-auto">
-      <div class="card">
-        <span class="card-title">Sleep Timer</span>
-        <div id="timerCountdown" style="font-size:1.8rem; font-weight:700; text-align:center; color:var(--accent); margin:8px 0;">Off</div>
-        <div class="grid-3">
-          <button class="btn" onclick="setSleepTimer(15)">15m</button>
-          <button class="btn" onclick="setSleepTimer(30)">30m</button>
-          <button class="btn" onclick="setSleepTimer(45)">45m</button>
-          <button class="btn" onclick="setSleepTimer(60)">60m</button>
-          <button class="btn" onclick="setSleepTimer(90)">90m</button>
-          <button class="btn" onclick="setSleepTimer(120)">120m</button>
-        </div>
-        <button class="btn btn-danger" onclick="setSleepTimer(0)">Cancel Timer</button>
-      </div>
-
-      <div class="card">
-        <span class="card-title">Display</span>
-        <div class="grid-2">
-          <button class="btn" onclick="sendKey('SLEEP')">Screen Off</button>
-          <button class="btn" onclick="sendKey('WAKEUP')">Wake Display</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= 11. SYSTEM -> SETUP ================= -->
+    <!-- ================= 10. SYSTEM -> SETUP ================= -->
     <section class="tab-panel" id="panel-system-setup">
-      <div class="card">
-        <span class="card-title">Animation Scale</span>
-        <div class="grid-3">
-          <button class="btn" onclick="setAnimationScale(0.0)">Instant (0.0x)</button>
-          <button class="btn" onclick="setAnimationScale(0.5)">Snappy (0.5x)</button>
-          <button class="btn" onclick="setAnimationScale(1.0)">Stock (1.0x)</button>
-        </div>
-      </div>
 
       <div class="card">
         <span class="card-title">Reboot</span>
@@ -2261,8 +2178,6 @@ HTML_MASTER = """<!DOCTYPE html>
 
     let currentPath = '/sdcard';
     let autoInterval = null;
-    let sleepSecondsRemaining = 0;
-    let sleepTimerInterval = null;
     let installedApps = [];
     let dockApps = [];
 
@@ -2289,13 +2204,14 @@ HTML_MASTER = """<!DOCTYPE html>
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('panel-remote').classList.add('active');
         refreshScreen();
-        switchSubTab('remote', activeSubTabs.remote || 'tcl');
+        switchSubTab('remote', (activeSubTabs.remote === 'compact' ? 'tcl' : activeSubTabs.remote) || 'tcl');
       } else {
         switchSubTab(mainTabId, activeSubTabs[mainTabId]);
       }
     }
 
     function switchSubTab(mainTabId, subTabId) {
+      if (mainTabId === 'remote' && (subTabId === 'compact' || !subTabId)) subTabId = 'tcl';
       activeSubTabs[mainTabId] = subTabId;
       const subBar = document.querySelector(`.subtabs-bar[data-parent="${mainTabId}"]`);
       if (subBar) {
@@ -2328,11 +2244,6 @@ HTML_MASTER = """<!DOCTYPE html>
       if (mainTabId === 'storage' && subTabId === 'files') loadFiles(currentPath);
       if (mainTabId === 'system' && subTabId === 'debloat') loadPresetDebloat();
       if (mainTabId === 'system' && subTabId === 'health') loadHealth();
-    }
-
-    function toggleNumpad() {
-      const el = document.getElementById('numpadGrid');
-      el.style.display = (el.style.display === 'none') ? 'grid' : 'none';
     }
 
     function toggleTclNumpad() {
@@ -2740,15 +2651,8 @@ HTML_MASTER = """<!DOCTYPE html>
         const res = await fetch('/api/layout');
         const data = await res.json();
         dockApps = data.dock || [];
-        document.getElementById('cfgGreeting').value = data.greeting_name || 'Dhruv';
-        document.getElementById('cfgColumns').value = data.columns || 4;
-        document.getElementById('cfgShowStats').checked = !!data.show_stats;
-        document.getElementById('cfgReducedMotion').checked = !!data.reduced_motion;
-        document.getElementById('cfgRoundButtons').checked = !!data.round_buttons;
-        document.getElementById('cfgSky').value = data.sky_intensity || 50;
 
         renderDock();
-        updateMockup();
 
         if (!installedApps.length) {
           const aRes = await fetch('/api/apps');
@@ -2765,40 +2669,79 @@ HTML_MASTER = """<!DOCTYPE html>
       const container = document.getElementById('dockZone');
       container.innerHTML = '';
       if (!dockApps.length) {
-        container.innerHTML = '<span style="color:var(--muted); font-size:0.8rem;">No dock apps. Click apps below to add.</span>';
+        container.innerHTML = '<span style="color:var(--muted); font-size:0.8rem; padding:8px;">No dock apps. Select apps below to add.</span>';
         return;
       }
       dockApps.forEach((pkg, index) => {
         const info = installedApps.find(a => a.pkg === pkg) || { name: pkg.split('.').pop(), icon: '📱' };
         const tile = document.createElement('div');
-        tile.className = 'tile';
+        tile.className = 'dock-tile';
         tile.innerHTML = `
-          <span>${info.icon} ${info.name}</span>
-          <span class="tile-del" onclick="removeDockApp(${index})">✕</span>
+          <span class="dock-tile-title">${info.icon} ${info.name}</span>
+          <div class="dock-tile-actions">
+            <button class="dock-tile-btn" onclick="moveDockApp(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Move left">◀</button>
+            <button class="dock-tile-btn" onclick="moveDockApp(${index}, 1)" ${index === dockApps.length - 1 ? 'disabled' : ''} title="Move right">▶</button>
+            <button class="dock-tile-btn dock-tile-del" onclick="removeDockApp(${index})" title="Remove">✕</button>
+          </div>
         `;
         container.appendChild(tile);
       });
+      renderAvailableApps();
     }
 
-    function renderAvailableApps() {
+    function moveDockApp(idx, dir) {
+      const target = idx + dir;
+      if (target < 0 || target >= dockApps.length) return;
+      const tmp = dockApps[idx];
+      dockApps[idx] = dockApps[target];
+      dockApps[target] = tmp;
+      renderDock();
+    }
+
+    function renderAvailableApps(query = '') {
       const grid = document.getElementById('availableAppsGrid');
+      if (!grid) return;
       grid.innerHTML = '';
-      installedApps.forEach(a => {
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.style.fontSize = '0.75rem';
-        btn.style.padding = '8px';
-        btn.innerHTML = `${a.icon} ${a.name}`;
-        btn.onclick = () => addDockApp(a.pkg);
+      const q = (query || document.getElementById('availableAppsFilter')?.value || '').toLowerCase().trim();
+      const filtered = installedApps.filter(a => {
+        if (q && !a.name.toLowerCase().includes(q) && !a.pkg.toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      if (!filtered.length) {
+        grid.innerHTML = '<div style="color:var(--muted); font-size:0.8rem; grid-column:1/-1; padding:12px;">No matching apps found</div>';
+        return;
+      }
+
+      filtered.forEach(a => {
+        const inDock = dockApps.includes(a.pkg);
+        const btn = document.createElement('div');
+        btn.className = 'app-pick-btn' + (inDock ? ' in-dock' : '');
+        btn.innerHTML = `
+          <span style="display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            ${a.icon} ${a.name}
+          </span>
+          <span style="font-size:0.75rem; color:${inDock ? 'var(--muted)' : 'var(--accent)'}; font-weight:600;">
+            ${inDock ? 'Added' : '+ Add'}
+          </span>
+        `;
+        if (!inDock) {
+          btn.onclick = () => addDockApp(a.pkg);
+        }
         grid.appendChild(btn);
       });
+    }
+
+    function filterAvailableApps() {
+      const input = document.getElementById('availableAppsFilter');
+      renderAvailableApps(input ? input.value : '');
     }
 
     function addDockApp(pkg) {
       if (!dockApps.includes(pkg)) {
         dockApps.push(pkg);
         renderDock();
-        showToast('Added');
+        showToast('Added to dock');
       }
     }
 
@@ -2807,21 +2750,10 @@ HTML_MASTER = """<!DOCTYPE html>
       renderDock();
     }
 
-    function updateMockup() {
-      const name = document.getElementById('cfgGreeting').value.trim() || 'DHRUV';
-      document.getElementById('mockGreetingText').textContent = `GOOD EVENING, ${name.toUpperCase()}`;
-    }
-
     async function pushLayoutToTv() {
-      showToast('Pushing layout to TV...');
+      showToast('Pushing dock layout to TV...');
       const body = {
-        dock: dockApps,
-        greeting_name: document.getElementById('cfgGreeting').value.trim(),
-        columns: parseInt(document.getElementById('cfgColumns').value) || 4,
-        show_stats: document.getElementById('cfgShowStats').checked,
-        reduced_motion: document.getElementById('cfgReducedMotion').checked,
-        round_buttons: document.getElementById('cfgRoundButtons').checked,
-        sky_intensity: parseInt(document.getElementById('cfgSky').value) || 50,
+        dock: dockApps
       };
       try {
         const res = await fetch('/api/layout/push', {
@@ -2830,7 +2762,7 @@ HTML_MASTER = """<!DOCTYPE html>
           body: JSON.stringify(body)
         });
         const d = await res.json();
-        showToast(d.ok ? 'Layout applied!' : 'Failed: ' + d.error);
+        showToast(d.ok ? 'Dock applied on TV!' : 'Failed: ' + d.error);
         setTimeout(refreshScreen, 1500);
       } catch (e) {
         showToast('Push layout error');
@@ -3200,51 +3132,6 @@ HTML_MASTER = """<!DOCTYPE html>
       }
     }
 
-    // Automation: Sleep Timer
-    function setSleepTimer(mins) {
-      clearInterval(sleepTimerInterval);
-      if (mins <= 0) {
-        sleepSecondsRemaining = 0;
-        document.getElementById('timerCountdown').textContent = 'Off';
-        showToast('Timer cancelled');
-        return;
-      }
-      sleepSecondsRemaining = mins * 60;
-      showToast(`Sleep timer: ${mins}m`);
-      updateTimer();
-      sleepTimerInterval = setInterval(() => {
-        sleepSecondsRemaining--;
-        if (sleepSecondsRemaining <= 0) {
-          clearInterval(sleepTimerInterval);
-          document.getElementById('timerCountdown').textContent = 'Off';
-          sendKey('SLEEP');
-        } else {
-          updateTimer();
-        }
-      }, 1000);
-    }
-
-    function updateTimer() {
-      const m = Math.floor(sleepSecondsRemaining / 60);
-      const s = sleepSecondsRemaining % 60;
-      document.getElementById('timerCountdown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-    }
-
-    // Setup: Animation Speeds
-    async function setAnimationScale(scale) {
-      showToast(`Setting scale to ${scale}x...`);
-      try {
-        await fetch('/api/setup/optimize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scale })
-        });
-        showToast(`Scale set to ${scale}x`);
-      } catch (e) {
-        showToast('Failed to set animations');
-      }
-    }
-
     // Setup: Reboot
     async function rebootTv(mode) {
       if (!confirm(`Reboot TV (${mode})?`)) return;
@@ -3435,8 +3322,21 @@ class WebRemoteServer:
                 if re.match(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$", p):
                     pkgs.add(p)
 
+        system_junk = {
+            "com.android.providers.telephony", "com.android.providers.media",
+            "com.android.wallpapercropper", "com.android.keychain", "com.android.traceur",
+            "com.android.printspooler", "com.android.pacprocessor", "com.android.companiondevicemanager",
+            "com.android.dynsystem", "com.android.proxyhandler", "com.android.vpndialogs",
+            "com.android.statementservice", "com.android.calllogbackup", "com.android.bluetoothmidiservice",
+            "com.android.carrierdefaultapp", "com.android.cellbroadcastreceiver"
+        }
+        pkgs = pkgs - system_junk
+
+        if not pkgs:
+            pkgs = set(APP_NAMES.keys())
+
         apps = []
-        for pkg in sorted(pkgs):
+        for pkg in sorted(pkgs, key=lambda p: APP_NAMES.get(p, (p, ""))[0].lower()):
             name, icon = humanize_package(pkg)
             apps.append({"pkg": pkg, "name": name, "icon": icon})
         return apps
@@ -3454,12 +3354,6 @@ class WebRemoteServer:
 
         return {
             "dock": dock,
-            "greeting_name": "Dhruv",
-            "columns": 4,
-            "show_stats": True,
-            "reduced_motion": False,
-            "round_buttons": False,
-            "sky_intensity": 50,
         }
 
     def push_layout(self, data):

@@ -3404,13 +3404,6 @@ public class MainActivity extends Activity {
         inputRow.setGravity(Gravity.CENTER_VERTICAL);
         hsv.addView(inputRow);
 
-        // 0. HDMI DualView PiP App & Input Setting
-        addInputTile(inputRow, "DualView", null, "⚡", true, null, () -> {
-            hideInputsPanel();
-            Intent pipIntent = new Intent(this, com.gathin.tvhome.pip.PipSettingsActivity.class);
-            pipIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(pipIntent);
-        });
 
         // 1. Google TV Main System Input
         addInputTile(inputRow, "Google TV", null, "🏠", true, null, () -> {

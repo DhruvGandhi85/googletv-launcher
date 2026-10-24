@@ -29,8 +29,6 @@ import android.widget.Toast;
 
 import com.gathin.tvhome.HubDataFetcher;
 import com.gathin.tvhome.RemoteKeyMapperService;
-import com.gathin.tvhome.pip.PipOverlayService;
-import com.gathin.tvhome.pip.PipSettingsActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +48,6 @@ public class LauncherSettingsActivity extends Activity {
     public static final String KEY_SHOW_SPORTS_SHELF = "show_sports_shelf";
 
     private static final String[] CATEGORIES = {
-            "DualView",
             "Remote",
             "Layout",
             "Sports",
@@ -240,75 +237,30 @@ public class LauncherSettingsActivity extends Activity {
 
         switch (index) {
             case 0:
-                buildDualViewContent();
-                break;
-            case 1:
                 buildRemoteContent();
                 break;
-            case 2:
+            case 1:
                 buildLayoutContent();
                 break;
-            case 3:
+            case 2:
                 buildSportsContent();
                 break;
-            case 4:
+            case 3:
                 buildTraktContent();
                 break;
-            case 5:
+            case 4:
                 buildMemoryContent();
                 break;
-            case 6:
+            case 5:
                 buildSystemContent();
                 break;
         }
     }
 
-    // 0. DUALVIEW
-    private void buildDualViewContent() {
-        SharedPreferences sp = getSharedPreferences(PipOverlayService.PREFS_PIP, MODE_PRIVATE);
-        String inAName = sp.getString(PipOverlayService.KEY_INPUT_A_NAME, "HDMI 2");
-        String inBName = sp.getString(PipOverlayService.KEY_INPUT_B_NAME, "HDMI 3");
-        int corner = sp.getInt(PipOverlayService.KEY_CORNER, 0);
-        String cornerText = corner == 0 ? "Top-Right" : corner == 1 ? "Bottom-Right" : corner == 2 ? "Bottom-Left" : "Top-Left";
-
-        createRow("Active Pair", inAName + " ⮂ " + inBName, () -> {
-            startActivity(new Intent(this, PipSettingsActivity.class));
-        });
-
-        createRow("Overlay Position", cornerText, () -> {
-            int next = (corner + 1) % 4;
-            sp.edit().putInt(PipOverlayService.KEY_CORNER, next).apply();
-            loadCategoryContent(0);
-        });
-
-        createRow("Swap Key", "'123' Remote Key", () -> {});
-
-        boolean isRunning = PipOverlayService.isRunning;
-        createRow("Overlay Session", isRunning ? "Active" : "Stopped", () -> {
-            if (PipOverlayService.isRunning) {
-                stopService(new Intent(this, PipOverlayService.class));
-            } else {
-                if (!Settings.canDrawOverlays(this)) {
-                    startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:" + getPackageName())));
-                    return;
-                }
-                startService(new Intent(this, PipOverlayService.class));
-            }
-            new Handler(Looper.getMainLooper()).postDelayed(() -> loadCategoryContent(0), 300);
-        });
-
-        createRow("Configure DualView", "Open", () -> {
-            startActivity(new Intent(this, PipSettingsActivity.class));
-        });
-    }
-
-    // 1. REMOTE
+    // 0. REMOTE
     private void buildRemoteContent() {
         String button123Target = RemoteKeyMapperService.getMapping(this, 171);
-        if (button123Target == null || button123Target.isEmpty() || "ACTION_PIP_SWAP".equals(button123Target)) {
-            button123Target = "DualView Swap";
-        } else if (RemoteKeyMapperService.ACTION_INPUTS.equals(button123Target)) {
+        if (button123Target == null || button123Target.isEmpty() || RemoteKeyMapperService.ACTION_INPUTS.equals(button123Target) || "ACTION_PIP_SWAP".equals(button123Target)) {
             button123Target = "Inputs Menu";
         } else if ("com.google.android.apps.tv.launcherx".equals(button123Target)) {
             button123Target = "Google TV";
@@ -318,16 +270,14 @@ public class LauncherSettingsActivity extends Activity {
 
         createRow("'123' Key", button123Target, () -> {
             String curr = RemoteKeyMapperService.getMapping(this, 171);
-            if (curr == null || "ACTION_PIP_SWAP".equals(curr)) {
-                RemoteKeyMapperService.setMapping(this, 171, RemoteKeyMapperService.ACTION_INPUTS);
-            } else if (RemoteKeyMapperService.ACTION_INPUTS.equals(curr)) {
+            if (curr == null || RemoteKeyMapperService.ACTION_INPUTS.equals(curr) || "ACTION_PIP_SWAP".equals(curr)) {
                 RemoteKeyMapperService.setMapping(this, 171, "com.google.android.apps.tv.launcherx");
             } else if ("com.google.android.apps.tv.launcherx".equals(curr)) {
                 RemoteKeyMapperService.setMapping(this, 171, RemoteKeyMapperService.ACTION_HOME);
             } else {
-                RemoteKeyMapperService.setMapping(this, 171, RemoteKeyMapperService.ACTION_PIP_SWAP);
+                RemoteKeyMapperService.setMapping(this, 171, RemoteKeyMapperService.ACTION_INPUTS);
             }
-            loadCategoryContent(1);
+            loadCategoryContent(0);
         });
 
         createRow("Inputs Key", "Inputs Switcher", () -> {});
@@ -343,7 +293,7 @@ public class LauncherSettingsActivity extends Activity {
         createRow("Reset Remappings", "Reset", () -> {
             getSharedPreferences(RemoteKeyMapperService.PREFS_REMAP, MODE_PRIVATE).edit().clear().apply();
             Toast.makeText(this, "Reset to defaults", Toast.LENGTH_SHORT).show();
-            loadCategoryContent(1);
+            loadCategoryContent(0);
         });
     }
 
@@ -394,38 +344,39 @@ public class LauncherSettingsActivity extends Activity {
         rightContentContainer.addView(row, lp);
     }
 
-    // 2. LAYOUT
+    // 1. LAYOUT
     private void buildLayoutContent() {
         SharedPreferences sp = getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE);
+
         int startupTab = sp.getInt(KEY_STARTUP_TAB, 0);
         String startupText = startupTab == 0 ? "Home" : startupTab == 1 ? "Sports" : startupTab == 2 ? "Trakt" : "Apps";
 
         createRow("Startup Tab", startupText, () -> {
             int next = (startupTab + 1) % 4;
             sp.edit().putInt(KEY_STARTUP_TAB, next).apply();
-            loadCategoryContent(2);
+            loadCategoryContent(1);
         });
 
         boolean heroBackdrop = sp.getBoolean(KEY_HERO_BACKDROP, true);
         createRow("Hero Backdrop", heroBackdrop ? "On" : "Off", () -> {
             sp.edit().putBoolean(KEY_HERO_BACKDROP, !heroBackdrop).apply();
-            loadCategoryContent(2);
+            loadCategoryContent(1);
         });
 
         int marginMode = sp.getInt(KEY_MARGIN_MODE, 0);
         createRow("Margins", marginMode == 0 ? "28dp" : "58dp", () -> {
             sp.edit().putInt(KEY_MARGIN_MODE, marginMode == 0 ? 1 : 0).apply();
-            loadCategoryContent(2);
+            loadCategoryContent(1);
         });
 
         boolean showSports = sp.getBoolean(KEY_SHOW_SPORTS_SHELF, true);
         createRow("Live Sports Shelf", showSports ? "Visible" : "Hidden", () -> {
             sp.edit().putBoolean(KEY_SHOW_SPORTS_SHELF, !showSports).apply();
-            loadCategoryContent(2);
+            loadCategoryContent(1);
         });
     }
 
-    // 3. SPORTS
+    // 2. SPORTS
     private void buildSportsContent() {
         Set<String> enabled = HubDataFetcher.getEnabledLeagues(this);
 
@@ -448,11 +399,11 @@ public class LauncherSettingsActivity extends Activity {
     private void createLeagueRow(String code, boolean isEnabled) {
         createRow(code, isEnabled ? "On" : "Off", () -> {
             HubDataFetcher.toggleLeague(this, code.equals("Premier League") ? "EPL" : code.equals("Champions League") ? "UCL" : code.equals("College Basketball") ? "CBB" : code);
-            loadCategoryContent(3);
+            loadCategoryContent(2);
         });
     }
 
-    // 4. TRAKT
+    // 3. TRAKT
     private void buildTraktContent() {
         String username = HubDataFetcher.getTraktUsername(this);
         createRow("Account", "@" + username, () -> {});
@@ -470,7 +421,7 @@ public class LauncherSettingsActivity extends Activity {
         });
     }
 
-    // 5. MEMORY
+    // 4. MEMORY
     private void buildMemoryContent() {
         ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
@@ -486,7 +437,7 @@ public class LauncherSettingsActivity extends Activity {
             HubDataFetcher.clearMemoryCache();
             System.gc();
             Toast.makeText(this, "Memory trimmed", Toast.LENGTH_SHORT).show();
-            new Handler(Looper.getMainLooper()).postDelayed(() -> loadCategoryContent(5), 250);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> loadCategoryContent(4), 250);
         });
 
         Display display = getWindowManager().getDefaultDisplay();
@@ -495,7 +446,7 @@ public class LauncherSettingsActivity extends Activity {
         createRow("Display", dm.widthPixels + "x" + dm.heightPixels + " @ " + Math.round(display.getRefreshRate()) + "Hz", () -> {});
     }
 
-    // 6. SYSTEM
+    // 5. SYSTEM
     private void buildSystemContent() {
         createRow("Google TV Launcher", "Switch", () -> {
             PackageManager pm = getPackageManager();

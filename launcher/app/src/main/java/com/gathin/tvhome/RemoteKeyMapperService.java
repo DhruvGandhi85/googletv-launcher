@@ -160,7 +160,7 @@ public class RemoteKeyMapperService extends AccessibilityService {
                 launchTarget(mapped);
                 return true;
             }
-            com.gathin.tvhome.pip.PipOverlayService.swapInputs(this);
+            launchTarget(ACTION_INPUTS);
             return true;
         }
 
@@ -220,7 +220,7 @@ public class RemoteKeyMapperService extends AccessibilityService {
             return;
         }
         if (ACTION_PIP_SWAP.equals(target)) {
-            com.gathin.tvhome.pip.PipOverlayService.swapInputs(this);
+            launchTarget(ACTION_INPUTS);
             return;
         }
         if (target.startsWith("KEY:")) {
