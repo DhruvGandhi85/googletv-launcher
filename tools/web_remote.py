@@ -2094,6 +2094,22 @@ HTML_MASTER = """<!DOCTYPE html>
       <!-- Addon Cards -->
       <div class="card">
         <div class="card-head">
+          <span class="card-title">Unified Sync (stremio_addon_config)</span>
+          <span class="badge badge-on">All-in-One</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--muted); margin-bottom:10px;">
+          Standalone sync hub combining Trakt Watchlists & Progress, Live Sports, and Pengu Resolvers.
+        </div>
+        <div class="grid-4" style="gap:8px;">
+          <button class="btn btn-sm btn-primary" onclick="installStremioAddon('stremio://' + window.location.hostname + ':7000/manifest.json')">⚡ Install on TV</button>
+          <button class="btn btn-sm" onclick="window.open('http://' + window.location.hostname + ':7000/', '_blank')">⚙ Configurator</button>
+          <button class="btn btn-sm" onclick="copyManifestUrl('http://' + window.location.hostname + ':7000/manifest.json')">📋 Copy Manifest</button>
+          <button class="btn btn-sm" onclick="openWebStremio('http://' + window.location.hostname + ':7000/manifest.json')">🌐 Web Stremio</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
           <span class="card-title">Pengu</span>
           <span class="badge badge-on">Provider</span>
         </div>
