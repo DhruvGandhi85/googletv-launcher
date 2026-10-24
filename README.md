@@ -6,6 +6,22 @@ Built with native Java for maximum responsiveness, zero bloat, and a lightweight
 
 ---
 
+## 📸 Interface & Screenshots
+
+| Clean TV Home Screen | Launcher Settings App |
+| :---: | :---: |
+| <img src="docs/launcher-home.png" width="480" alt="Clean TV Home Screen" /> | <img src="docs/launcher-settings.png" width="480" alt="Launcher Settings App" /> |
+
+| HDMI DualView PiP App | Floating PiP Overlay & Live Sports |
+| :---: | :---: |
+| <img src="docs/hdmi-dualview-pip.png" width="480" alt="HDMI DualView PiP" /> | <img src="docs/pip-overlay-active.png" width="480" alt="Floating PiP Overlay & Live Sports" /> |
+
+| Clean Inputs Switcher |
+| :---: |
+| <img src="docs/inputs-menu.png" width="480" alt="Clean Inputs Switcher" /> |
+
+---
+
 ## Highlights
 
 * 🚫 **100% Ad-Free & Zero Bloat**: Replaces ad-cluttered stock launchers (`launcherx`) with a clean, minimal interface.
