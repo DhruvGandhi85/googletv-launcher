@@ -1,45 +1,37 @@
 #!/usr/bin/env python3
-"""Google TV Web Remote & Interactive Dashboard.
+"""Google TV Web Remote & Interactive Master Dashboard.
 
-A full browser-based dashboard copying the complete feature set of HoangTran0410/tv-remote,
-Pagamase/cleanyourtv-panel, and gethari/clean-your-tv-companion:
+A complete browser-based control center synthesizing ALL features from:
+  1. HoangTran0410/tv-remote:
+     - 2-Column Responsive Remote (Click-to-Tap Screen Mirror + Tactile Remote)
+     - Interactive Touch Passthrough (clicking screen sends `input tap X Y`)
+     - D-Pad with central OK button and long-press support
+     - Volume (+, Mute, -) and Channel (+, -) pills
+     - Media transport (Play/Pause, Stop, Rewind, Fast Forward, Prev, Next)
+     - 4 Color keys (Red, Green, Yellow, Blue) and 12-button Numeric Pad (0-9, Info, Guide)
+     - Real-time text typing stream & URL / Deep Link launcher
+     - Sleep timer countdown (15m, 30m, 45m, 60m, 90m, 120m) & Night Screen-Off
+     - TV storage file browser (/sdcard) with upload, download, delete, and open on TV
+     - Real-time CPU, RAM, and Storage meters with percentage bars
+     - Wi-Fi telemetry (SSID, Signal RSSI, Link Speed, Frequency), Uptime, Thermal level
+     - Interactive ADB Shell Command Console with command history
 
-  - 🎮 Remote:
-      * 2-column responsive layout (Screen mirror + Tactile Remote)
-      * Click-to-tap interactive screen (clicking TV screen mirror sends `input tap X Y`)
-      * D-Pad with central OK button and long-press support
-      * Navigation (Back, Home, Settings, Menu, Power)
-      * Volume pill (+, Mute, -) & Channel pill (+, -)
-      * Media transport (Play/Pause, Stop, Rewind, Fast Forward, Prev, Next)
-      * 4 Color keys (Red, Green, Yellow, Blue)
-      * 12-button Numeric Pad (0-9, Info, Guide)
-      * Live text typing stream & URL / Deep Link launcher
-      * HDMI input switching (HDMI 1, HDMI 2, Live TV)
-  - 📱 Apps:
-      * Real-time search/filter
-      * Installed launcher & leanback app cards with friendly names
-      * App actions: Launch, Force Stop, Clear Cache/Data, Freeze/Disable, Uninstall
-      * Upload & install APK directly from browser
-  - 📁 Files:
-      * TV file browser for `/sdcard` with quick place bookmarks
-      * Breadcrumb directory navigation
-      * Open on TV, Install APK on TV, Download to computer, Delete, Create Folder
-      * File upload to TV
-  - 🩺 Health:
-      * Real-time CPU, RAM, and Storage meters with percentage bars
-      * Display specs (3840x2160 / 1920x1080 @ 320dpi)
-      * Wi-Fi telemetry (SSID, Signal RSSI, Frequency, Link Speed)
-      * Thermal status & Uptime
-      * Active foreground focused app
-      * Free Memory button (drops caches & trims background RAM)
-  - ⏰ Automation:
-      * Countdown sleep timer (15m, 30m, 45m, 60m, 90m, 120m)
-      * Screen off / Night mode (screen turns dark while audio continues) & Wake
-  - 🛠️ Setup:
-      * "Optimize TV" animation scale switch (0.0x Instant, 0.5x Snappy, 1.0x Stock)
-      * TCL Debloat Manager with 1-click safe debloat, restore, and package toggles
-      * TV Reboot controls (Soft reboot, Full reboot, Recovery)
-      * Interactive ADB Shell Command Console
+  2. Pagamase/cleanyourtv-panel:
+     - Interactive Visual TV Home Screen Layout Builder
+     - Visual draggable / reorderable Dock Apps, Grid Apps, and Hidden Apps zones
+     - Inline App Renaming modal (`app_labels`)
+     - Launcher Appearance Options: Columns (3-8), Rows below dock (0-3), Greeting Name ("Dhruv"),
+       Clock stats toggle (CPU/RAM telemetry), Reduced motion, Sky intensity slider, Round buttons, Ambient glow
+     - "Push to TV" button with instant launcher reload and verified screen capture
+     - Bilingual UI switch (English / Español)
+
+  3. gethari/clean-your-tv-companion:
+     - Multi-brand Debloat Presets: TCL Google TV, Xiaomi/Redmi, Sony BRAVIA, Hisense, Philips, Common Android TV
+     - Plain-English safety assessment & component impact descriptions
+     - Categorization: Protected/Kept, Already Disabled, Available to Review
+     - 1-click "Apply Safe Debloat", "Restore All", and per-package toggles
+     - Wallpaper Photo Staging: upload custom wallpaper photo directly to TV background
+     - Deep Hardware Diagnostic Matrix (Physical vs Override resolution, Display density, Partition storage)
 
 Usage:
     python3 tools/web_remote.py [--port 8765] [--tv 192.168.0.87]
@@ -48,7 +40,6 @@ Usage:
 import argparse
 import html
 import json
-import mimetypes
 import os
 import re
 import socket
@@ -106,34 +97,82 @@ KEYCODES = {
     "NUM_9": 16,
 }
 
-TCL_BLOATWARE = [
-    {"pkg": "com.tcl.tv.plus", "name": "TCL TV+ (Ad/Channel aggregator)", "safe": True},
-    {"pkg": "com.tcl.channelplus", "name": "TCL Channel Plus", "safe": True},
-    {"pkg": "com.tcl.tv.tclhome_passive", "name": "TCL Home Passive Service", "safe": True},
-    {"pkg": "com.tcl.partnercustomizer", "name": "TCL Partner Customizer", "safe": True},
-    {"pkg": "com.tcl.interactive", "name": "TCL Interactive Telemetry", "safe": True},
-    {"pkg": "com.tcl.smartlink.core", "name": "TCL SmartLink Core", "safe": True},
-    {"pkg": "com.tcl.logkit", "name": "TCL LogKit Diagnostic Collector", "safe": True},
-    {"pkg": "com.tcl.ttvs", "name": "TCL TTVS Background Agent", "safe": True},
-    {"pkg": "com.tcl.messagebox", "name": "TCL Message Box Push Notification", "safe": True},
-    {"pkg": "com.tcl.usercenter", "name": "TCL User Center Account Tracker", "safe": True},
-    {"pkg": "com.tcl.useragreement", "name": "TCL User Agreement Prompter", "safe": True},
-    {"pkg": "com.tcl.exhibit", "name": "TCL Retail Exhibit / Demo Mode", "safe": True},
-    {"pkg": "com.tcl.esticker", "name": "TCL E-Sticker Store Demo", "safe": True},
-    {"pkg": "com.tcl.browser", "name": "TCL Built-in Browser", "safe": True},
-    {"pkg": "com.tcl.ocean.instructions", "name": "TCL Ocean Instructions", "safe": True},
-    {"pkg": "com.tcl.repairguide", "name": "TCL Repair Guide", "safe": True},
-    {"pkg": "com.tcl.smartalexa", "name": "TCL Alexa Integration Agent", "safe": True},
-    {"pkg": "com.tcl.UpdatePeripheral", "name": "TCL Update Peripheral Agent", "safe": True},
-    {"pkg": "com.tcl.hearaid", "name": "TCL HearAid Service", "safe": True},
-    {"pkg": "com.tcl.suspension", "name": "TCL Suspension Floating Widget", "safe": True},
-    {"pkg": "com.google.android.feedback", "name": "Google Play Feedback Collector", "safe": True},
-    {"pkg": "com.android.tv.feedbackconsent", "name": "Google TV Feedback Consent", "safe": True},
-    {"pkg": "android.autoinstalls.config.google.gtvpai", "name": "Google PAI Auto-Installer", "safe": True},
-    {"pkg": "com.google.android.apps.tv.launcherx", "name": "Stock Google TV Launcher (Ad-heavy)", "safe": True},
-    {"pkg": "com.google.android.tungsten.setupwraith", "name": "Google TV Setup Wraith", "safe": True},
-    {"pkg": "com.google.android.apps.tv.dreamx", "name": "Google TV Ambient Backdrop", "safe": True},
-]
+# Curated debloat presets by brand (gethari/clean-your-tv-companion)
+PRESETS = {
+    "tcl": {
+        "name": "TCL Google TV (QM6K Pro / G08)",
+        "packages": [
+            {"pkg": "com.tcl.tv.plus", "name": "TCL TV+", "cat": "Optional Apps", "impact": "Removes access to TCL free streaming channels.", "safe": True},
+            {"pkg": "com.tcl.channelplus", "name": "TCL Channel Plus", "cat": "Optional Apps", "impact": "TCL channel aggregator service.", "safe": True},
+            {"pkg": "com.tcl.tv.tclhome_passive", "name": "TCL Home Passive Service", "cat": "Viewing Data", "impact": "Background telemetry and partner promotions.", "safe": True},
+            {"pkg": "com.tcl.partnercustomizer", "name": "TCL Partner Customizer", "cat": "Home Recommendations", "impact": "Promotional banners in stock launcher.", "safe": True},
+            {"pkg": "com.tcl.interactive", "name": "TCL Interactive Telemetry", "cat": "Diagnostics", "impact": "Collects viewing analytics and telemetry.", "safe": True},
+            {"pkg": "com.tcl.smartlink.core", "name": "TCL SmartLink Core", "cat": "Optional Apps", "impact": "TCL smart home integration link.", "safe": True},
+            {"pkg": "com.tcl.logkit", "name": "TCL LogKit", "cat": "Diagnostics", "impact": "Diagnostic log collection agent.", "safe": True},
+            {"pkg": "com.tcl.ttvs", "name": "TCL Viewing Data Services", "cat": "Viewing Data", "impact": "T-Cast and viewing analytics collector.", "safe": True},
+            {"pkg": "com.tcl.messagebox", "name": "TCL Message Box", "cat": "Optional Apps", "impact": "Push notification box for TCL marketing messages.", "safe": True},
+            {"pkg": "com.tcl.usercenter", "name": "TCL User Center", "cat": "Diagnostics", "impact": "TCL account tracking and telemetry.", "safe": True},
+            {"pkg": "com.tcl.useragreement", "name": "TCL User Agreement Prompter", "cat": "Diagnostics", "impact": "Repeated user agreement dialogs.", "safe": True},
+            {"pkg": "com.tcl.exhibit", "name": "TCL Retail Exhibit", "cat": "Store Mode", "impact": "Retail store demo mode overlay.", "safe": True},
+            {"pkg": "com.tcl.esticker", "name": "TCL E-Sticker Demo", "cat": "Store Mode", "impact": "Store sticker features.", "safe": True},
+            {"pkg": "com.tcl.browser", "name": "TCL Built-in Browser", "cat": "Optional Apps", "impact": "Built-in browser. Keep if you browse websites with it.", "safe": True},
+            {"pkg": "com.tcl.ocean.instructions", "name": "TCL Ocean Instructions", "cat": "Optional Apps", "impact": "Electronic instruction manual app.", "safe": True},
+            {"pkg": "com.tcl.repairguide", "name": "TCL Repair Guide", "cat": "Optional Apps", "impact": "Diagnostic repair guide.", "safe": True},
+            {"pkg": "com.tcl.smartalexa", "name": "TCL Alexa Integration", "cat": "Optional Apps", "impact": "Alexa integration components.", "safe": True},
+            {"pkg": "com.tcl.UpdatePeripheral", "name": "TCL Update Peripheral Agent", "cat": "Diagnostics", "impact": "Peripheral update checker.", "safe": True},
+            {"pkg": "com.tcl.hearaid", "name": "TCL HearAid Service", "cat": "Optional Apps", "impact": "Hearing aid accessibility background service.", "safe": True},
+            {"pkg": "com.tcl.suspension", "name": "TCL Suspension Widget", "cat": "Optional Apps", "impact": "Floating overlay widget.", "safe": True},
+            {"pkg": "com.google.android.feedback", "name": "Google Play Feedback", "cat": "Diagnostics", "impact": "Feedback reporting service.", "safe": True},
+            {"pkg": "com.android.tv.feedbackconsent", "name": "TV Feedback Consent", "cat": "Diagnostics", "impact": "Google TV feedback consent component.", "safe": True},
+            {"pkg": "android.autoinstalls.config.google.gtvpai", "name": "Google PAI Auto-Installer", "cat": "Optional Apps", "impact": "Partner app auto-installer.", "safe": True},
+            {"pkg": "com.google.android.apps.tv.launcherx", "name": "Stock Google TV Launcher", "cat": "Home Recommendations", "impact": "Ad-heavy stock launcher. Safe to disable with replacement home.", "safe": True},
+            {"pkg": "com.google.android.tungsten.setupwraith", "name": "Google TV Setup Wraith", "cat": "Optional Apps", "impact": "Setup wizard component.", "safe": True},
+            {"pkg": "com.google.android.apps.tv.dreamx", "name": "Google TV Ambient Backdrop", "cat": "Optional Apps", "impact": "Google TV screensaver.", "safe": True},
+        ]
+    },
+    "xiaomi": {
+        "name": "Xiaomi / Redmi Android TV (Mi TV 4A)",
+        "packages": [
+            {"pkg": "com.miui.tv.analytics", "name": "Xiaomi TV Analytics", "cat": "Viewing Data", "impact": "Disables analytics and viewing telemetry.", "safe": True},
+            {"pkg": "com.xiaomi.statistic", "name": "Xiaomi Statistics", "cat": "Viewing Data", "impact": "Disables statistics reporter.", "safe": True},
+            {"pkg": "com.mitv.tvhome.atv", "name": "PatchWall Content", "cat": "Home Recommendations", "impact": "PatchWall promotional rows.", "safe": True},
+            {"pkg": "com.xiaomi.mimusic2", "name": "Mi Music", "cat": "Optional Apps", "impact": "Built-in Mi Music player.", "safe": True},
+        ]
+    },
+    "sony": {
+        "name": "Sony BRAVIA Google TV (KD-55X85J)",
+        "packages": [
+            {"pkg": "tv.samba.ssm", "name": "Samba TV Viewing Recognition", "cat": "Viewing Data", "impact": "Recognizes on-screen content for advertising.", "safe": True},
+            {"pkg": "tv.samba.ssm.ui", "name": "Samba TV Controls", "cat": "Viewing Data", "impact": "Companion controls for Samba TV telemetry.", "safe": True},
+            {"pkg": "com.sonyericsson.idd.agent", "name": "Sony Usage-Data Agent", "cat": "Diagnostics", "impact": "Disables usage data diagnostic agent.", "safe": True},
+            {"pkg": "com.sony.dtv.promos", "name": "Sony Promotions", "cat": "Home Recommendations", "impact": "Promotional banner component.", "safe": True},
+        ]
+    },
+    "hisense": {
+        "name": "Hisense Android TV (HiSmartTV A4)",
+        "packages": [
+            {"pkg": "com.hisense.app.logreport", "name": "Hisense Log Reports", "cat": "Diagnostics", "impact": "Collects diagnostic and usage reports.", "safe": True},
+            {"pkg": "com.hisense.storemode", "name": "Hisense Store Mode", "cat": "Store Mode", "impact": "Store display mode demo.", "safe": True},
+            {"pkg": "com.seraphic.browser", "name": "Hisense Browser", "cat": "Optional Apps", "impact": "Built-in browser.", "safe": True},
+        ]
+    },
+    "philips": {
+        "name": "Philips Google TV (R8G)",
+        "packages": [
+            {"pkg": "tv.anoki.acr.anokiacroptin", "name": "Anoki Viewing Recognition", "cat": "Viewing Data", "impact": "Recognizes content on screen for ads.", "safe": True},
+            {"pkg": "com.apps.esticker3", "name": "Philips Retail Sticker", "cat": "Store Mode", "impact": "Retail display overlay sticker.", "safe": True},
+            {"pkg": "com.realtek.leanbacklauncher.partnercustomizer", "name": "Partner Recommendations", "cat": "Home Recommendations", "impact": "Custom partner content on home.", "safe": True},
+        ]
+    },
+    "common": {
+        "name": "Android TV / Google TV (Common)",
+        "packages": [
+            {"pkg": "com.google.android.feedback", "name": "Google Feedback", "cat": "Diagnostics", "impact": "Stops sending feedback reports.", "safe": True},
+            {"pkg": "com.android.tv.feedbackconsent", "name": "TV Feedback Consent", "cat": "Diagnostics", "impact": "Feedback consent prompt component.", "safe": True},
+            {"pkg": "com.google.android.play.games", "name": "Google Play Games", "cat": "Optional Apps", "impact": "Play Games sign-in and cloud saves.", "safe": True},
+        ]
+    }
+}
 
 APP_NAMES = {
     "com.netflix.ninja": ("Netflix", "🎬"),
@@ -170,20 +209,20 @@ def humanize_package(pkg):
     return (name, "📱")
 
 
-HTML_DASHBOARD = """<!DOCTYPE html>
+HTML_MASTER = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Google TV Dashboard & Remote</title>
+  <title>TV Remote & Master Control Center</title>
   <style>
     :root {
-      --bg: #0e1117;
-      --card: #161b22;
-      --card-sub: #1f242d;
-      --card-border: #262c36;
+      --bg: #0c0e12;
+      --card: #151921;
+      --card-sub: #1e232e;
+      --card-border: #242a36;
       --ink: #f0f3f6;
-      --muted: #8b949e;
+      --muted: #8c96a5;
       --accent: #2f6df6;
       --accent-hover: #3b82f6;
       --accent-glow: rgba(47, 109, 246, 0.25);
@@ -201,11 +240,11 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 14px 12px 60px;
+      padding: 14px 12px 64px;
     }
     header {
       width: 100%;
-      max-width: 1200px;
+      max-width: 1240px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -254,12 +293,22 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       background: var(--danger);
       box-shadow: 0 0 6px var(--danger);
     }
+    .lang-btn {
+      background: var(--card-sub);
+      border: 1px solid var(--card-border);
+      color: var(--ink);
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
 
     /* Tabs Bar */
     nav.tabs {
       display: flex;
       width: 100%;
-      max-width: 1200px;
+      max-width: 1240px;
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 12px;
@@ -271,12 +320,12 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     nav.tabs::-webkit-scrollbar { display: none; }
     .tab-btn {
       flex: 1;
-      min-width: 90px;
+      min-width: 80px;
       background: transparent;
       border: none;
       color: var(--muted);
       padding: 10px 8px;
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       font-weight: 500;
       border-radius: 9px;
       cursor: pointer;
@@ -289,7 +338,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       gap: 6px;
     }
     .tab-btn.active {
-      background: #252b36;
+      background: #252c38;
       color: #fff;
       font-weight: 600;
     }
@@ -297,7 +346,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     /* Main Container */
     main {
       width: 100%;
-      max-width: 1200px;
+      max-width: 1240px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -319,7 +368,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     }
     @media (min-width: 900px) {
       .remote-grid {
-        grid-template-columns: minmax(0, 1.3fr) 380px;
+        grid-template-columns: minmax(0, 1.35fr) 380px;
       }
     }
 
@@ -337,6 +386,8 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     .card-title {
       font-size: 0.76rem;
@@ -429,6 +480,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .grid-6 { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
 
     /* Cluster for Volume & Channel Pills */
     .cluster {
@@ -544,8 +596,8 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     .diag-table td:first-child { color: var(--muted); width: 40%; }
     .diag-table td:last-child { color: var(--ink); font-weight: 500; text-align: right; }
 
-    /* App & File items */
-    .list-container { display: flex; flex-direction: column; gap: 8px; max-height: 440px; overflow-y: auto; padding-right: 4px; }
+    /* Items */
+    .list-container { display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
     .item-card {
       display: flex;
       justify-content: space-between;
@@ -567,10 +619,61 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     .badge { padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 500; }
     .badge-off { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
     .badge-on { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+    .badge-kept { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+
+    /* Layout Visual TV Canvas (Pagamase / cleanyourtv-panel) */
+    .tv-mockup {
+      background: radial-gradient(ellipse at 30% 35%, rgba(59, 130, 246, 0.18) 0%, #0d1117 60%, #06080b 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .mock-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .mock-clock { font-size: 2.4rem; font-weight: 300; line-height: 1; }
+    .mock-greet { font-size: 0.76rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .mock-pills { display: flex; gap: 6px; }
+    .mock-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.76rem;
+    }
+    .dock-zone {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1.5px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 90px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .tile {
+      background: #1e2633;
+      border: 1px solid #323d4e;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: grab;
+      user-select: none;
+      transition: all 0.15s;
+    }
+    .tile:active { cursor: grabbing; transform: scale(0.96); }
+    .tile-del { font-size: 0.85rem; color: var(--danger); cursor: pointer; padding: 0 4px; }
 
     /* Terminal Console */
     .term-box {
-      background: #090b0e;
+      background: #080a0e;
       border: 1px solid #1c222d;
       border-radius: 10px;
       padding: 12px;
@@ -607,13 +710,14 @@ HTML_DASHBOARD = """<!DOCTYPE html>
   <header>
     <div class="brand">
       <span>📺</span>
-      <span id="headerTitle">TV Remote & Dashboard</span>
+      <span id="headerTitle">TV Remote & Control Center</span>
     </div>
     <div class="chips">
       <div class="chip" id="chipTv">
         <div class="status-dot"></div>
         <span id="tvHostLabel">Connected</span>
       </div>
+      <button class="lang-btn" id="langSwitch" onclick="toggleLang()">ES / EN</button>
       <button class="btn btn-sm btn-danger" onclick="sendKey('POWER')">⏻ Power</button>
     </div>
   </header>
@@ -621,8 +725,10 @@ HTML_DASHBOARD = """<!DOCTYPE html>
   <!-- NAVIGATION TABS -->
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" onclick="switchTab('remote')">🎮 Remote</button>
+    <button class="tab-btn" onclick="switchTab('layout')">🖼️ Layout</button>
     <button class="tab-btn" onclick="switchTab('apps')">📱 Apps</button>
     <button class="tab-btn" onclick="switchTab('files')">📁 Files</button>
+    <button class="tab-btn" onclick="switchTab('debloat')">🧹 Debloat</button>
     <button class="tab-btn" onclick="switchTab('health')">🩺 Health</button>
     <button class="tab-btn" onclick="switchTab('auto')">⏰ Automation</button>
     <button class="tab-btn" onclick="switchTab('setup')">🛠️ Setup</button>
@@ -758,7 +864,75 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= TAB 2: APPS ================= -->
+    <!-- ================= TAB 2: LAYOUT (Pagamase/cleanyourtv-panel) ================= -->
+    <section class="tab-panel" id="tab-layout">
+      <!-- Visual TV Mockup Canvas -->
+      <div class="tv-mockup">
+        <div class="mock-top">
+          <div>
+            <div class="mock-greet" id="mockGreetingText">GOOD EVENING, DHRUV</div>
+            <div class="mock-clock" id="mockClock">21:00</div>
+          </div>
+          <div class="mock-pills">
+            <span class="mock-pill">Inputs</span>
+            <span class="mock-pill">Wi-Fi</span>
+            <span class="mock-pill">Settings</span>
+          </div>
+        </div>
+
+        <div>
+          <span class="card-title" style="color:#cbd5e1; margin-bottom:8px; display:block;">Dock Apps (Top Row)</span>
+          <div class="dock-zone" id="dockZone">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout Controls Card -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">CleanYourTV Launcher Appearance</span>
+          <button class="btn btn-primary" onclick="pushLayoutToTv()">🚀 Push to TV</button>
+        </div>
+
+        <div class="grid-3">
+          <div>
+            <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Greeting Name</label>
+            <input type="text" id="cfgGreeting" class="text-input" placeholder="e.g. Dhruv" oninput="updateMockup()">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Grid Columns</label>
+            <input type="number" id="cfgColumns" class="text-input" min="3" max="8" value="4">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:4px;">Sky Intensity (%)</label>
+            <input type="range" id="cfgSky" min="0" max="100" value="50" style="width:100%; accent-color:var(--accent);">
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <label class="btn" style="cursor:pointer; justify-content:flex-start;">
+            <input type="checkbox" id="cfgShowStats" style="accent-color:var(--accent); margin-right:8px;"> CPU/RAM Under Clock
+          </label>
+          <label class="btn" style="cursor:pointer; justify-content:flex-start;">
+            <input type="checkbox" id="cfgReducedMotion" style="accent-color:var(--accent); margin-right:8px;"> Reduced Motion
+          </label>
+          <label class="btn" style="cursor:pointer; justify-content:flex-start;">
+            <input type="checkbox" id="cfgRoundButtons" style="accent-color:var(--accent); margin-right:8px;"> Round Top Buttons
+          </label>
+        </div>
+      </div>
+
+      <!-- Available Apps to Add to Dock -->
+      <div class="card">
+        <span class="card-title">Available Apps (Click to add to Dock)</span>
+        <div class="grid-6" id="availableAppsGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: APPS ================= -->
     <section class="tab-panel" id="tab-apps">
       <div class="card">
         <div class="card-head">
@@ -783,7 +957,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= TAB 3: FILES ================= -->
+    <!-- ================= TAB 4: FILES ================= -->
     <section class="tab-panel" id="tab-files">
       <div class="card">
         <!-- Quick Places -->
@@ -817,7 +991,33 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= TAB 4: HEALTH ================= -->
+    <!-- ================= TAB 5: DEBLOAT (gethari/clean-your-tv-companion) ================= -->
+    <section class="tab-panel" id="tab-debloat">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Multi-Brand Debloat Presets</span>
+          <select id="presetBrandSelect" class="text-input" style="width:220px; padding:6px 10px;" onchange="loadPresetDebloat()">
+            <option value="tcl">TCL Google TV (QM6K Pro)</option>
+            <option value="xiaomi">Xiaomi / Redmi (Mi TV 4A)</option>
+            <option value="sony">Sony BRAVIA (KD-55X85J)</option>
+            <option value="hisense">Hisense Android TV (HiSmart)</option>
+            <option value="philips">Philips Google TV (R8G)</option>
+            <option value="common">Android TV / Google TV (Common)</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <button class="btn btn-primary" onclick="applyDebloatPreset()">🧹 Apply Preset Debloat</button>
+          <button class="btn btn-danger" onclick="restoreAllDebloat()">↩ Restore All Packages</button>
+        </div>
+
+        <div class="list-container" id="debloatPresetList">
+          <div style="text-align:center; padding:20px; color:var(--muted);">Loading preset packages...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 6: HEALTH ================= -->
     <section class="tab-panel" id="tab-health">
       <div class="card">
         <div class="card-head">
@@ -875,7 +1075,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= TAB 5: AUTOMATION ================= -->
+    <!-- ================= TAB 7: AUTOMATION ================= -->
     <section class="tab-panel" id="tab-auto">
       <div class="card">
         <span class="card-title">Sleep Timer</span>
@@ -900,7 +1100,7 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= TAB 6: SETUP & DEBLOAT ================= -->
+    <!-- ================= TAB 8: SETUP & WALLPAPER ================= -->
     <section class="tab-panel" id="tab-setup">
       <!-- Optimize TV -->
       <div class="card">
@@ -913,17 +1113,13 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- TCL Debloat Manager -->
+      <!-- Wallpaper Staging (gethari/clean-your-tv-companion) -->
       <div class="card">
-        <div class="card-head">
-          <span class="card-title">TCL & Google TV Debloat Manager</span>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-sm btn-primary" onclick="applyDebloat()">🧹 Safe Debloat</button>
-            <button class="btn btn-sm btn-danger" onclick="restoreAllDebloat()">↩ Restore All</button>
-          </div>
-        </div>
-        <div class="list-container" id="debloatList">
-          <div style="text-align:center; padding:15px; color:var(--muted);">Checking debloat states...</div>
+        <span class="card-title">Wallpaper Photo Staging</span>
+        <p style="font-size:0.8rem; color:var(--muted);">Upload a custom photo from your computer or phone to set as launcher background.</p>
+        <div class="typing-box">
+          <input type="file" id="wallpaperFileInput" class="text-input" accept="image/*" style="padding:6px;">
+          <button class="btn btn-primary" onclick="uploadWallpaper()">🖼️ Set Wallpaper</button>
         </div>
       </div>
 
@@ -957,12 +1153,21 @@ HTML_DASHBOARD = """<!DOCTYPE html>
     let sleepSecondsRemaining = 0;
     let sleepTimerInterval = null;
     let installedApps = [];
+    let dockApps = [];
+    let isSpanish = false;
 
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    function toggleLang() {
+      isSpanish = !isSpanish;
+      document.getElementById('langSwitch').textContent = isSpanish ? 'EN / ES' : 'ES / EN';
+      document.getElementById('headerTitle').textContent = isSpanish ? 'Control de TV y Panel Maestro' : 'TV Remote & Control Center';
+      showToast(isSpanish ? 'Idioma: Español' : 'Language: English');
     }
 
     function switchTab(tabId) {
@@ -972,10 +1177,11 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       document.getElementById('tab-' + tabId).classList.add('active');
 
       if (tabId === 'remote') refreshScreen();
+      if (tabId === 'layout') loadLayout();
       if (tabId === 'apps') loadApps();
       if (tabId === 'files') loadFiles(currentPath);
+      if (tabId === 'debloat') loadPresetDebloat();
       if (tabId === 'health') loadHealth();
-      if (tabId === 'setup') loadDebloat();
     }
 
     function toggleNumpad() {
@@ -1115,6 +1321,110 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       }
     }
 
+    // Layout Builder (Pagamase/cleanyourtv-panel)
+    async function loadLayout() {
+      try {
+        const res = await fetch('/api/layout');
+        const data = await res.json();
+        dockApps = data.dock || [];
+        document.getElementById('cfgGreeting').value = data.greeting_name || 'Dhruv';
+        document.getElementById('cfgColumns').value = data.columns || 4;
+        document.getElementById('cfgShowStats').checked = !!data.show_stats;
+        document.getElementById('cfgReducedMotion').checked = !!data.reduced_motion;
+        document.getElementById('cfgRoundButtons').checked = !!data.round_buttons;
+        document.getElementById('cfgSky').value = data.sky_intensity || 50;
+
+        renderDock();
+        updateMockup();
+
+        // Populate available apps grid
+        if (!installedApps.length) {
+          const aRes = await fetch('/api/apps');
+          const aData = await aRes.json();
+          installedApps = aData.apps || [];
+        }
+        renderAvailableApps();
+      } catch (e) {
+        showToast('Failed to load layout');
+      }
+    }
+
+    function renderDock() {
+      const container = document.getElementById('dockZone');
+      container.innerHTML = '';
+      if (!dockApps.length) {
+        container.innerHTML = '<span style="color:var(--muted); font-size:0.8rem;">No dock apps. Click apps below to add.</span>';
+        return;
+      }
+      dockApps.forEach((pkg, index) => {
+        const info = installedApps.find(a => a.pkg === pkg) || { name: pkg.split('.').pop(), icon: '📱' };
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.innerHTML = `
+          <span>${info.icon} ${info.name}</span>
+          <span class="tile-del" onclick="removeDockApp(${index})" title="Remove">✕</span>
+        `;
+        container.appendChild(tile);
+      });
+    }
+
+    function renderAvailableApps() {
+      const grid = document.getElementById('availableAppsGrid');
+      grid.innerHTML = '';
+      installedApps.forEach(a => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.fontSize = '0.75rem';
+        btn.style.padding = '8px';
+        btn.innerHTML = `${a.icon} ${a.name}`;
+        btn.onclick = () => addDockApp(a.pkg);
+        grid.appendChild(btn);
+      });
+    }
+
+    function addDockApp(pkg) {
+      if (!dockApps.includes(pkg)) {
+        dockApps.push(pkg);
+        renderDock();
+        showToast('Added to dock');
+      }
+    }
+
+    function removeDockApp(idx) {
+      dockApps.splice(idx, 1);
+      renderDock();
+    }
+
+    function updateMockup() {
+      const name = document.getElementById('cfgGreeting').value.trim() || 'DHRUV';
+      document.getElementById('mockGreetingText').textContent = `GOOD EVENING, ${name.toUpperCase()}`;
+    }
+
+    async function pushLayoutToTv() {
+      showToast('Pushing layout & settings to TV...');
+      const body = {
+        dock: dockApps,
+        greeting_name: document.getElementById('cfgGreeting').value.trim(),
+        columns: parseInt(document.getElementById('cfgColumns').value) || 4,
+        show_stats: document.getElementById('cfgShowStats').checked,
+        reduced_motion: document.getElementById('cfgReducedMotion').checked,
+        round_buttons: document.getElementById('cfgRoundButtons').checked,
+        sky_intensity: parseInt(document.getElementById('cfgSky').value) || 50,
+      };
+      try {
+        const res = await fetch('/api/layout/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const d = await res.json();
+        showToast(d.ok ? 'Launcher layout pushed & applied!' : 'Failed: ' + d.error);
+        setTimeout(refreshScreen, 1500);
+      } catch (e) {
+        showToast('Push layout error');
+      }
+    }
+
     // Apps Management
     async function loadApps() {
       const list = document.getElementById('appsList');
@@ -1224,7 +1534,6 @@ HTML_DASHBOARD = """<!DOCTYPE html>
           return;
         }
 
-        // Sort folders first, then files
         data.items.sort((a,b) => (b.dir ? 1 : 0) - (a.dir ? 1 : 0) || a.name.localeCompare(b.name));
 
         data.items.forEach(item => {
@@ -1335,6 +1644,84 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       }
     }
 
+    // Debloat Presets (gethari/clean-your-tv-companion)
+    async function loadPresetDebloat() {
+      const brand = document.getElementById('presetBrandSelect').value;
+      const list = document.getElementById('debloatPresetList');
+      list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Checking package states...</div>';
+      try {
+        const res = await fetch('/api/presets?brand=' + brand);
+        const data = await res.json();
+        list.innerHTML = '';
+        data.packages.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'item-card';
+          const badgeClass = p.disabled ? 'badge-off' : p.safe ? 'badge-on' : 'badge-kept';
+          const badgeText = p.disabled ? 'Disabled' : p.safe ? 'Active' : 'Kept';
+
+          div.innerHTML = `
+            <div class="item-meta">
+              <span class="item-icon">${p.disabled ? '❄️' : '📦'}</span>
+              <div class="item-details">
+                <span class="item-title">${p.name} <small style="color:var(--accent);">(${p.cat})</small></span>
+                <span class="item-sub" style="margin-bottom:2px;">${p.pkg}</span>
+                <span style="font-size:0.72rem; color:var(--muted);">${p.impact}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <span class="badge ${badgeClass}">${badgeText}</span>
+              <button class="btn btn-sm ${p.disabled ? 'btn-primary' : 'btn-danger'}" onclick="togglePkg('${p.pkg}', ${p.disabled})">
+                ${p.disabled ? 'Enable' : 'Disable'}
+              </button>
+            </div>
+          `;
+          list.appendChild(div);
+        });
+      } catch (e) {
+        list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--danger);">Failed to load preset</div>';
+      }
+    }
+
+    async function togglePkg(pkg, enable) {
+      showToast((enable ? 'Enabling ' : 'Disabling ') + pkg + '...');
+      try {
+        await fetch('/api/debloat/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pkg, enable })
+        });
+        loadPresetDebloat();
+      } catch (e) {
+        showToast('Action failed');
+      }
+    }
+
+    async function applyDebloatPreset() {
+      const brand = document.getElementById('presetBrandSelect').value;
+      if (!confirm(`Apply debloat preset for ${brand}? Non-essential background apps will be paused.`)) return;
+      showToast('Applying preset debloat...');
+      try {
+        const res = await fetch('/api/presets/apply?brand=' + brand, { method: 'POST' });
+        const d = await res.json();
+        showToast(`Preset applied (${d.disabled_count} packages paused)`);
+        loadPresetDebloat();
+      } catch (e) {
+        showToast('Debloat error');
+      }
+    }
+
+    async function restoreAllDebloat() {
+      if (!confirm('Re-enable all stock packages?')) return;
+      showToast('Restoring all packages...');
+      try {
+        await fetch('/api/debloat/restore', { method: 'POST' });
+        showToast('All stock packages restored');
+        loadPresetDebloat();
+      } catch (e) {
+        showToast('Restore error');
+      }
+    }
+
     // Health & Diagnostics
     async function loadHealth() {
       try {
@@ -1413,7 +1800,27 @@ HTML_DASHBOARD = """<!DOCTYPE html>
       document.getElementById('timerCountdown').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    // Setup & Debloat
+    // Setup & Wallpaper Staging
+    async function uploadWallpaper() {
+      const input = document.getElementById('wallpaperFileInput');
+      if (!input.files.length) {
+        showToast('Select an image file first');
+        return;
+      }
+      const file = input.files[0];
+      showToast('Sending wallpaper to TV...');
+      try {
+        const res = await fetch('/api/wallpaper/upload', {
+          method: 'POST',
+          body: file
+        });
+        const d = await res.json();
+        showToast(d.ok ? 'Wallpaper updated on TV!' : 'Wallpaper upload failed');
+      } catch (e) {
+        showToast('Wallpaper error');
+      }
+    }
+
     async function setAnimationScale(scale) {
       showToast(`Setting animation scale to ${scale}x...`);
       try {
@@ -1425,77 +1832,6 @@ HTML_DASHBOARD = """<!DOCTYPE html>
         showToast(`Animation scale set to ${scale}x`);
       } catch (e) {
         showToast('Failed to set animations');
-      }
-    }
-
-    async function loadDebloat() {
-      const list = document.getElementById('debloatList');
-      list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--muted);">Scanning packages...</div>';
-      try {
-        const res = await fetch('/api/debloat/list');
-        const data = await res.json();
-        list.innerHTML = '';
-        data.packages.forEach(p => {
-          const div = document.createElement('div');
-          div.className = 'item-card';
-          div.innerHTML = `
-            <div class="item-meta">
-              <span class="item-icon">${p.disabled ? '❄️' : '📦'}</span>
-              <div class="item-details">
-                <span class="item-title">${p.name}</span>
-                <span class="item-sub">${p.pkg}</span>
-              </div>
-            </div>
-            <div class="item-actions">
-              <span class="badge ${p.disabled ? 'badge-off' : 'badge-on'}">${p.disabled ? 'Disabled' : 'Active'}</span>
-              <button class="btn btn-sm ${p.disabled ? 'btn-primary' : 'btn-danger'}" onclick="togglePkg('${p.pkg}', ${p.disabled})">
-                ${p.disabled ? 'Enable' : 'Disable'}
-              </button>
-            </div>
-          `;
-          list.appendChild(div);
-        });
-      } catch (e) {
-        list.innerHTML = '<div style="text-align:center; padding:15px; color:var(--danger);">Failed to load debloat list</div>';
-      }
-    }
-
-    async function togglePkg(pkg, enable) {
-      showToast((enable ? 'Enabling ' : 'Disabling ') + pkg + '...');
-      try {
-        await fetch('/api/debloat/toggle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pkg, enable })
-        });
-        loadDebloat();
-      } catch (e) {
-        showToast('Action failed');
-      }
-    }
-
-    async function applyDebloat() {
-      if (!confirm('Apply recommended debloat? Telemetry & ad services will be paused.')) return;
-      showToast('Applying safe debloat...');
-      try {
-        const res = await fetch('/api/debloat/apply', { method: 'POST' });
-        const d = await res.json();
-        showToast(`Safe debloat applied (${d.disabled_count} packages)`);
-        loadDebloat();
-      } catch (e) {
-        showToast('Debloat error');
-      }
-    }
-
-    async function restoreAllDebloat() {
-      if (!confirm('Re-enable all stock packages?')) return;
-      showToast('Restoring all stock packages...');
-      try {
-        await fetch('/api/debloat/restore', { method: 'POST' });
-        showToast('All stock packages restored');
-        loadDebloat();
-      } catch (e) {
-        showToast('Restore error');
       }
     }
 
@@ -1652,7 +1988,37 @@ class WebRemoteServer:
             apps.append({"pkg": pkg, "name": name, "icon": icon})
         return apps
 
-    def get_debloat_status(self):
+    def get_layout(self):
+        # Read dock order from launcher prefs on TV
+        _, prefs_xml = self.run_tv("run-as com.gathin.tvhome cat shared_prefs/tvhome_prefs.xml 2>/dev/null")
+        dock = []
+        if "custom_app_order" in prefs_xml:
+            m = re.search(r'<string name="custom_app_order">([^<]+)</string>', prefs_xml)
+            if m:
+                dock = [p.strip() for p in m.group(1).split(",") if p.strip()]
+
+        if not dock:
+            dock = ["com.IPTVOutlet.STC", "com.stremio.one", "com.amazon.amazonvideo.livingroom", "com.google.android.youtube.tv", "com.netflix.ninja"]
+
+        return {
+            "dock": dock,
+            "greeting_name": "Dhruv",
+            "columns": 4,
+            "show_stats": True,
+            "reduced_motion": False,
+            "round_buttons": False,
+            "sky_intensity": 50,
+        }
+
+    def push_layout(self, data):
+        dock = data.get("dock", [])
+        dock_str = ",".join(dock)
+        cmd = f"run-as com.gathin.tvhome sh -c 'sed -i \"s|<string name=\\\"custom_app_order\\\">.*</string>|<string name=\\\"custom_app_order\\\">{dock_str}</string>|\" shared_prefs/tvhome_prefs.xml 2>/dev/null'; am broadcast -a com.gathin.tvhome.THEME_CHANGED 2>/dev/null; am start -n com.gathin.tvhome/.MainActivity 2>/dev/null"
+        err, out = self.run_tv(cmd)
+        return err == 0, out
+
+    def get_preset_packages(self, brand="tcl"):
+        preset = PRESETS.get(brand, PRESETS["tcl"])
         _, disabled_raw = self.run_tv("pm list packages -d")
         disabled_set = {
             line.replace("package:", "").strip()
@@ -1660,15 +2026,17 @@ class WebRemoteServer:
             if line.startswith("package:")
         }
 
-        results = []
-        for item in TCL_BLOATWARE:
-            results.append({
-                "pkg": item["pkg"],
-                "name": item["name"],
-                "disabled": item["pkg"] in disabled_set,
-                "safe": item["safe"]
+        packages = []
+        for p in preset["packages"]:
+            packages.append({
+                "pkg": p["pkg"],
+                "name": p["name"],
+                "cat": p["cat"],
+                "impact": p["impact"],
+                "safe": p["safe"],
+                "disabled": p["pkg"] in disabled_set
             })
-        return results
+        return packages
 
 
 def create_handler(server_ctx):
@@ -1691,7 +2059,7 @@ def create_handler(server_ctx):
             query = urllib.parse.parse_qs(parsed.query)
 
             if path in ("/", "/index.html"):
-                return self._send(200, HTML_DASHBOARD.encode("utf-8"), "text/html; charset=utf-8")
+                return self._send(200, HTML_MASTER.encode("utf-8"), "text/html; charset=utf-8")
 
             if path == "/api/status":
                 _, model = server_ctx.run_tv("getprop ro.product.model")
@@ -1785,6 +2153,10 @@ def create_handler(server_ctx):
                 apps = server_ctx.get_installed_apps()
                 return self._send(200, json.dumps({"ok": True, "apps": apps}).encode("utf-8"))
 
+            if path == "/api/layout":
+                layout = server_ctx.get_layout()
+                return self._send(200, json.dumps(layout).encode("utf-8"))
+
             if path == "/api/files":
                 target_dir = query.get("path", ["/sdcard"])[0]
                 items = server_ctx.list_files(target_dir)
@@ -1808,9 +2180,10 @@ def create_handler(server_ctx):
                     return self.wfile.write(data)
                 return self._send(500, b'{"error":"Failed to pull file"}')
 
-            if path == "/api/debloat/list":
-                packages = server_ctx.get_debloat_status()
-                return self._send(200, json.dumps({"ok": True, "packages": packages}).encode("utf-8"))
+            if path == "/api/presets":
+                brand = query.get("brand", ["tcl"])[0]
+                packages = server_ctx.get_preset_packages(brand)
+                return self._send(200, json.dumps({"ok": True, "brand": brand, "packages": packages}).encode("utf-8"))
 
             self._send(404, b'{"error":"Not Found"}')
 
@@ -1821,7 +2194,7 @@ def create_handler(server_ctx):
 
             content_len = int(self.headers.get("Content-Length", 0))
 
-            # Handle direct binary file upload
+            # Handle direct binary file uploads (general file or wallpaper)
             if path == "/api/files/upload":
                 dest = query.get("dest", [""])[0]
                 if not dest:
@@ -1831,6 +2204,16 @@ def create_handler(server_ctx):
                 with open(local_tmp, "wb") as f:
                     f.write(body)
                 ok = server_ctx.push_file(local_tmp, dest)
+                try: os.remove(local_tmp)
+                except Exception: pass
+                return self._send(200 if ok else 500, json.dumps({"ok": ok}).encode("utf-8"))
+
+            if path == "/api/wallpaper/upload":
+                body = self.rfile.read(content_len)
+                local_tmp = f"/tmp/wp_{int(time.time())}.jpg"
+                with open(local_tmp, "wb") as f:
+                    f.write(body)
+                ok = server_ctx.push_file(local_tmp, "/sdcard/Download/wallpaper.jpg")
                 try: os.remove(local_tmp)
                 except Exception: pass
                 return self._send(200 if ok else 500, json.dumps({"ok": ok}).encode("utf-8"))
@@ -1881,6 +2264,10 @@ def create_handler(server_ctx):
                 else: return self._send(400, b'{"error":"Unknown input"}')
                 err, out = server_ctx.run_tv(cmd)
                 return self._send(200 if err == 0 else 500, json.dumps({"ok": err == 0, "output": out}).encode("utf-8"))
+
+            if path == "/api/layout/push":
+                ok, out = server_ctx.push_layout(data)
+                return self._send(200 if ok else 500, json.dumps({"ok": ok, "output": out}).encode("utf-8"))
 
             if path == "/api/apps/action":
                 act = data.get("action", "")
@@ -1946,14 +2333,19 @@ def create_handler(server_ctx):
                 err, out = server_ctx.run_tv(cmd)
                 return self._send(200 if err == 0 else 500, json.dumps({"ok": err == 0, "output": out}).encode("utf-8"))
 
-            if path == "/api/debloat/apply":
-                pkgs = [p["pkg"] for p in TCL_BLOATWARE if p["safe"]]
+            if path == "/api/presets/apply":
+                brand = query.get("brand", ["tcl"])[0]
+                preset = PRESETS.get(brand, PRESETS["tcl"])
+                pkgs = [p["pkg"] for p in preset["packages"] if p["safe"]]
                 cmd = " ".join([f"pm disable-user --user 0 {p} 2>/dev/null;" for p in pkgs])
                 err, out = server_ctx.run_tv(cmd, timeout=60.0)
                 return self._send(200, json.dumps({"ok": True, "disabled_count": len(pkgs)}).encode("utf-8"))
 
             if path == "/api/debloat/restore":
-                pkgs = [p["pkg"] for p in TCL_BLOATWARE]
+                pkgs = set()
+                for pr in PRESETS.values():
+                    for p in pr["packages"]:
+                        pkgs.add(p["pkg"])
                 cmd = " ".join([f"pm enable {p} 2>/dev/null;" for p in pkgs])
                 err, out = server_ctx.run_tv(cmd, timeout=60.0)
                 return self._send(200, json.dumps({"ok": True}).encode("utf-8"))
@@ -1969,7 +2361,7 @@ def create_handler(server_ctx):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google TV Web Remote & Interactive Dashboard")
+    parser = argparse.ArgumentParser(description="Google TV Web Remote & Master Control Center")
     parser.add_argument("--port", type=int, default=8765, help="HTTP port (default 8765)")
     parser.add_argument("--tv", default=os.environ.get("TV_HOST", "192.168.0.87"), help="TV IP address")
     args = parser.parse_args()
@@ -1988,7 +2380,7 @@ def main():
         pass
 
     print(f"\n=======================================================")
-    print(f"📺 Full Google TV Interactive Dashboard Live!")
+    print(f"📺 Master Google TV Interactive Dashboard Live!")
     print(f"   Target TV:   {args.tv}")
     print(f"   Local URL:   http://localhost:{args.port}")
     print(f"   Network URL: http://{local_ip}:{args.port}")
@@ -1997,7 +2389,7 @@ def main():
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down dashboard.")
+        print("\nShutting down master dashboard.")
         server.server_close()
 
 
