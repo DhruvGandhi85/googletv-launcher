@@ -5,9 +5,11 @@ Consolidated tab and subtab architecture following Jakub Krehel's "Less is More"
 - English-only interface
 - Built specifically for Google TV
 - Dual-column interactive remote with live screen mirror touch-to-click alongside ergonomic keypad
-- All original menus preserved in clean subtabs:
+- Media Hub with Trakt cloud sync (Watchlist, In Progress, Trending, Stremio 1-click play) and Live ESPN Scoreboard (NBA, NFL, EPL, UCL, MLB, NHL)
+- Complete maintenance & settings suite:
   - Remote: Live Screen Mirror, Touch Passthrough, Text & URL Input, HDMI Switcher, Full Remote D-Pad
   - Launcher: Layout (Visual Mockup, Dock Apps, Grid, Push to TV) & Apps (List, Filter, Actions, APK Install)
+  - Media: Trakt (Personal Watchlist, Up Next, Trending, 1-Click Play on TV) & Sports (Live ESPN Scoreboards across 9 Leagues)
   - Storage: Files (Explorer, Download, Delete, Open on TV) & Wallpaper (Upload & Stage)
   - System: Debloat (Google TV Presets), Health (Meters & Telemetry), Automation (Sleep Timer, Night Mode), Setup (Speed, Reboot, ADB Console)
 - No gratuitous text/additions or eyebrow elements
@@ -24,6 +26,7 @@ import sys
 import threading
 import time
 import urllib.parse
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -71,6 +74,21 @@ KEYCODES = {
     "NUM_7": 14,
     "NUM_8": 15,
     "NUM_9": 16,
+}
+
+TRAKT_CLIENT_ID = "TAFn3uRVPHeS8skvQDnS_DyymbWYbs6Sm9Q-IempuEc"
+TRAKT_USER = "DhruvG85"
+
+ESPN_LEAGUES = {
+    "nba": ("NBA", "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"),
+    "nfl": ("NFL", "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"),
+    "epl": ("Premier League", "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"),
+    "ucl": ("Champions League", "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard"),
+    "mlb": ("MLB", "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard"),
+    "nhl": ("NHL", "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard"),
+    "cfb": ("College Football", "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?limit=14"),
+    "cbb": ("College Basketball", "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=14"),
+    "mls": ("MLS", "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard"),
 }
 
 PRESETS = {
@@ -609,7 +627,7 @@ HTML_MASTER = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 520px;
+      max-height: 540px;
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -655,6 +673,131 @@ HTML_MASTER = """<!DOCTYPE html>
       align-items: center;
       gap: 6px;
       flex-shrink: 0;
+    }
+
+    /* Trakt Media Grid */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+    }
+    .media-card {
+      background: #181d26;
+      border: 1px solid #242c3b;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .media-card:hover {
+      transform: translateY(-2px);
+      border-color: #3b82f6;
+    }
+    .poster-wrap {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      background: #080a0e;
+      position: relative;
+      overflow: hidden;
+    }
+    .poster-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .media-body {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .media-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .media-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .rating-badge {
+      color: #facc15;
+      font-weight: 600;
+    }
+
+    /* Sports Scoreboard Grid */
+    .sports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 12px;
+    }
+    .game-card {
+      background: #181d26;
+      border: 1px solid #242c3b;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    .game-status-badge {
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status-live { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .status-final { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+    .status-pre { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+
+    .team-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .team-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .team-logo {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+    }
+    .team-name {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .team-score {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
     }
 
     /* Meters */
@@ -759,6 +902,7 @@ HTML_MASTER = """<!DOCTYPE html>
     <nav class="main-tabs" role="tablist">
       <button class="main-tab-btn active" data-tab="remote" onclick="switchMainTab('remote')">Remote</button>
       <button class="main-tab-btn" data-tab="launcher" onclick="switchMainTab('launcher')">Launcher</button>
+      <button class="main-tab-btn" data-tab="media" onclick="switchMainTab('media')">Media</button>
       <button class="main-tab-btn" data-tab="storage" onclick="switchMainTab('storage')">Storage</button>
       <button class="main-tab-btn" data-tab="system" onclick="switchMainTab('system')">System</button>
     </nav>
@@ -767,6 +911,12 @@ HTML_MASTER = """<!DOCTYPE html>
     <div class="subtabs-bar" data-parent="launcher">
       <button class="subtab-btn active" data-sub="layout" onclick="switchSubTab('launcher', 'layout')">Layout</button>
       <button class="subtab-btn" data-sub="apps" onclick="switchSubTab('launcher', 'apps')">Apps</button>
+    </div>
+
+    <!-- Subtabs for Media (Trakt & Sports) -->
+    <div class="subtabs-bar" data-parent="media">
+      <button class="subtab-btn active" data-sub="trakt" onclick="switchSubTab('media', 'trakt')">Trakt</button>
+      <button class="subtab-btn" data-sub="sports" onclick="switchSubTab('media', 'sports')">Sports</button>
     </div>
 
     <!-- Subtabs for Storage -->
@@ -785,7 +935,7 @@ HTML_MASTER = """<!DOCTYPE html>
   </div>
 
   <main>
-    <!-- ================= 1. REMOTE: DUAL-COLUMN WITH SCREEN MIRROR + REMOTE ================= -->
+    <!-- ================= 1. REMOTE ================= -->
     <section class="tab-panel active" id="panel-remote">
       <div class="remote-grid">
         <!-- LEFT COLUMN: LIVE SCREEN & INPUTS -->
@@ -992,7 +1142,59 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 4. STORAGE -> FILES ================= -->
+    <!-- ================= 4. MEDIA -> TRAKT ================= -->
+    <section class="tab-panel" id="panel-media-trakt">
+      <div class="card">
+        <div class="card-head">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="card-title">Trakt Cloud</span>
+            <span class="badge badge-on" id="traktUserBadge">DhruvG85</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm active" id="btnShelfWatchlist" onclick="setTraktShelf('watchlist')">Watchlist</button>
+            <button class="btn btn-sm" id="btnShelfProgress" onclick="setTraktShelf('inprogress')">In Progress</button>
+            <button class="btn btn-sm" id="btnShelfTrendingM" onclick="setTraktShelf('trending_movies')">Trending Movies</button>
+            <button class="btn btn-sm" id="btnShelfTrendingS" onclick="setTraktShelf('trending_shows')">Trending Shows</button>
+          </div>
+        </div>
+
+        <div class="typing-box">
+          <input type="text" id="traktSearchInput" class="text-input" placeholder="Search Trakt movies or series..." onkeydown="if(event.key==='Enter') searchTrakt()">
+          <button class="btn btn-primary" onclick="searchTrakt()">Search</button>
+        </div>
+
+        <div id="traktContainer" class="media-grid">
+          <div style="text-align:center; padding:30px; color:var(--muted); grid-column:1/-1;">Loading Trakt items...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 5. MEDIA -> SPORTS ================= -->
+    <section class="tab-panel" id="panel-media-sports">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">ESPN Live Scoreboard</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="sportsLeaguePills">
+            <button class="btn btn-sm active" onclick="setSportsLeague('nba')">NBA</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('nfl')">NFL</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('epl')">EPL</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('ucl')">UCL</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('mlb')">MLB</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('nhl')">NHL</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('cfb')">CFB</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('cbb')">CBB</button>
+            <button class="btn btn-sm" onclick="setSportsLeague('mls')">MLS</button>
+            <button class="btn btn-sm" onclick="loadSports()">Refresh</button>
+          </div>
+        </div>
+
+        <div id="sportsContainer" class="sports-grid">
+          <div style="text-align:center; padding:30px; color:var(--muted); grid-column:1/-1;">Loading live scores...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 6. STORAGE -> FILES ================= -->
     <section class="tab-panel" id="panel-storage-files">
       <div class="card">
         <div class="card-head">
@@ -1022,7 +1224,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 5. STORAGE -> WALLPAPER ================= -->
+    <!-- ================= 7. STORAGE -> WALLPAPER ================= -->
     <section class="tab-panel" id="panel-storage-wallpaper">
       <div class="card">
         <span class="card-title">Wallpaper</span>
@@ -1033,7 +1235,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 6. SYSTEM -> DEBLOAT ================= -->
+    <!-- ================= 8. SYSTEM -> DEBLOAT ================= -->
     <section class="tab-panel" id="panel-system-debloat">
       <div class="card">
         <div class="card-head">
@@ -1056,7 +1258,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 7. SYSTEM -> HEALTH ================= -->
+    <!-- ================= 9. SYSTEM -> HEALTH ================= -->
     <section class="tab-panel" id="panel-system-health">
       <div class="card">
         <div class="card-head">
@@ -1110,7 +1312,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 8. SYSTEM -> AUTOMATION ================= -->
+    <!-- ================= 10. SYSTEM -> AUTOMATION ================= -->
     <section class="tab-panel" id="panel-system-auto">
       <div class="card">
         <span class="card-title">Sleep Timer</span>
@@ -1135,7 +1337,7 @@ HTML_MASTER = """<!DOCTYPE html>
       </div>
     </section>
 
-    <!-- ================= 9. SYSTEM -> SETUP ================= -->
+    <!-- ================= 11. SYSTEM -> SETUP ================= -->
     <section class="tab-panel" id="panel-system-setup">
       <div class="card">
         <span class="card-title">Animation Scale</span>
@@ -1172,6 +1374,7 @@ HTML_MASTER = """<!DOCTYPE html>
     let activeMainTab = 'remote';
     let activeSubTabs = {
       launcher: 'layout',
+      media: 'trakt',
       storage: 'files',
       system: 'debloat'
     };
@@ -1182,6 +1385,9 @@ HTML_MASTER = """<!DOCTYPE html>
     let sleepTimerInterval = null;
     let installedApps = [];
     let dockApps = [];
+
+    let currentTraktShelf = 'watchlist';
+    let currentSportsLeague = 'nba';
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -1222,6 +1428,8 @@ HTML_MASTER = """<!DOCTYPE html>
 
       if (mainTabId === 'launcher' && subTabId === 'layout') loadLayout();
       if (mainTabId === 'launcher' && subTabId === 'apps') loadApps();
+      if (mainTabId === 'media' && subTabId === 'trakt') loadTrakt(currentTraktShelf);
+      if (mainTabId === 'media' && subTabId === 'sports') loadSports(currentSportsLeague);
       if (mainTabId === 'storage' && subTabId === 'files') loadFiles(currentPath);
       if (mainTabId === 'system' && subTabId === 'debloat') loadPresetDebloat();
       if (mainTabId === 'system' && subTabId === 'health') loadHealth();
@@ -1360,6 +1568,181 @@ HTML_MASTER = """<!DOCTYPE html>
         autoInterval = setInterval(refreshScreen, 3000);
         btn.textContent = 'Auto (3s)';
         refreshScreen();
+      }
+    }
+
+    // Trakt Cloud Sync
+    function setTraktShelf(shelf) {
+      currentTraktShelf = shelf;
+      document.querySelectorAll('#panel-media-trakt .card-head .btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = {
+        'watchlist': 'btnShelfWatchlist',
+        'inprogress': 'btnShelfProgress',
+        'trending_movies': 'btnShelfTrendingM',
+        'trending_shows': 'btnShelfTrendingS'
+      }[shelf];
+      if (activeBtn) document.getElementById(activeBtn).classList.add('active');
+      loadTrakt(shelf);
+    }
+
+    async function loadTrakt(shelf = 'watchlist') {
+      const container = document.getElementById('traktContainer');
+      container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--muted); grid-column:1/-1;">Loading Trakt items...</div>';
+      try {
+        const res = await fetch('/api/trakt/items?shelf=' + shelf);
+        const data = await res.json();
+        renderTraktItems(data.items || []);
+      } catch (e) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--danger); grid-column:1/-1;">Failed to load Trakt items</div>';
+      }
+    }
+
+    async function searchTrakt() {
+      const q = document.getElementById('traktSearchInput').value.trim();
+      if (!q) return;
+      const container = document.getElementById('traktContainer');
+      container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--muted); grid-column:1/-1;">Searching Trakt...</div>';
+      try {
+        const res = await fetch('/api/trakt/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        renderTraktItems(data.items || []);
+      } catch (e) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--danger); grid-column:1/-1;">Search failed</div>';
+      }
+    }
+
+    function renderTraktItems(items) {
+      const container = document.getElementById('traktContainer');
+      container.innerHTML = '';
+      if (!items.length) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--muted); grid-column:1/-1;">No items found</div>';
+        return;
+      }
+
+      items.forEach(it => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        const posterUrl = it.poster || `https://via.placeholder.com/300x450/181d26/8c96a5?text=${encodeURIComponent(it.title)}`;
+        const typeBadge = it.type === 'movie' ? 'Movie' : 'Series';
+
+        card.innerHTML = `
+          <div class="poster-wrap">
+            <img class="poster-img" src="${posterUrl}" alt="${it.title}" onerror="this.src='https://via.placeholder.com/300x450/181d26/8c96a5?text=No+Poster'">
+          </div>
+          <div class="media-body">
+            <div class="media-name">${it.title}</div>
+            <div class="media-meta-row">
+              <span>${it.year || ''} · ${typeBadge}</span>
+              <span class="rating-badge">★ ${it.rating || '-'}</span>
+            </div>
+            <button class="btn btn-sm btn-primary" style="margin-top:4px;" onclick="playTraktOnTv('${it.type}', '${it.imdb}')">
+              Play on TV
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function playTraktOnTv(type, imdb) {
+      if (!imdb) {
+        showToast('No IMDB ID found for this title');
+        return;
+      }
+      showToast('Launching on TV via Stremio...');
+      try {
+        const res = await fetch('/api/trakt/play', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, imdb_id: imdb })
+        });
+        const d = await res.json();
+        showToast(d.ok ? 'Streaming on Google TV!' : 'Launch failed: ' + d.output);
+      } catch (e) {
+        showToast('Play error');
+      }
+    }
+
+    // ESPN Live Sports
+    function setSportsLeague(league) {
+      currentSportsLeague = league;
+      document.querySelectorAll('#sportsLeaguePills button').forEach(b => {
+        b.classList.toggle('active', b.textContent.toLowerCase() === league.toLowerCase());
+      });
+      loadSports(league);
+    }
+
+    async function loadSports(league = currentSportsLeague) {
+      const container = document.getElementById('sportsContainer');
+      container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--muted); grid-column:1/-1;">Loading live scores...</div>';
+      try {
+        const res = await fetch('/api/sports/scores?league=' + league);
+        const data = await res.json();
+        renderSportsGames(data.games || []);
+      } catch (e) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--danger); grid-column:1/-1;">Failed to load live scores</div>';
+      }
+    }
+
+    function renderSportsGames(games) {
+      const container = document.getElementById('sportsContainer');
+      container.innerHTML = '';
+      if (!games.length) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--muted); grid-column:1/-1;">No games scheduled today</div>';
+        return;
+      }
+
+      games.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        const isLive = g.state === 'in';
+        const isFinal = g.state === 'post';
+        const statusClass = isLive ? 'status-live' : isFinal ? 'status-final' : 'status-pre';
+        const statusText = isLive ? 'LIVE' : isFinal ? 'FINAL' : 'SCHEDULED';
+
+        card.innerHTML = `
+          <div class="game-header">
+            <span class="game-status-badge ${statusClass}">${statusText}</span>
+            <span>${g.detail}</span>
+            <span>${g.network || ''}</span>
+          </div>
+
+          <div class="team-row">
+            <div class="team-info">
+              ${g.away_logo ? `<img class="team-logo" src="${g.away_logo}" alt="${g.away_abbr}">` : ''}
+              <span class="team-name">${g.away_name}</span>
+            </div>
+            <span class="team-score">${g.away_score}</span>
+          </div>
+
+          <div class="team-row">
+            <div class="team-info">
+              ${g.home_logo ? `<img class="team-logo" src="${g.home_logo}" alt="${g.home_abbr}">` : ''}
+              <span class="team-name">${g.home_name}</span>
+            </div>
+            <span class="team-score">${g.home_score}</span>
+          </div>
+
+          ${g.odds ? `<div style="font-size:0.72rem; color:var(--muted);">${g.odds}</div>` : ''}
+
+          <button class="btn btn-sm btn-primary" onclick="tuneSportsOnTv('${g.network}')">
+            Watch on TV
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function tuneSportsOnTv(network) {
+      showToast('Tuning TV to sports broadcast...');
+      try {
+        await fetch('/api/sports/tune', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ network })
+        });
+      } catch (e) {
+        showToast('Tune error');
       }
     }
 
@@ -2099,6 +2482,116 @@ class WebRemoteServer:
             })
         return packages
 
+    def get_trakt_items(self, shelf="watchlist"):
+        endpoint_map = {
+            "watchlist": f"users/{TRAKT_USER}/watchlist?extended=full",
+            "inprogress": f"users/{TRAKT_USER}/lists/in-progress/items?extended=full",
+            "trending_movies": "movies/trending?extended=full&limit=16",
+            "trending_shows": "shows/trending?extended=full&limit=16"
+        }
+        endpoint = endpoint_map.get(shelf, endpoint_map["watchlist"])
+        url = f"https://api.trakt.tv/{endpoint}"
+        req = urllib.request.Request(url, headers={
+            "Content-Type": "application/json",
+            "trakt-api-version": "2",
+            "trakt-api-key": TRAKT_CLIENT_ID,
+            "User-Agent": "GoogleTV-Launcher/1.0"
+        })
+        items = []
+        try:
+            with urllib.request.urlopen(req, timeout=7.0) as resp:
+                raw = json.loads(resp.read().decode("utf-8"))
+                for it in raw:
+                    m = it.get("movie") or it.get("show") or it
+                    if not isinstance(m, dict) or not m.get("title"):
+                        continue
+                    mtype = "movie" if ("movie" in it or it.get("type") == "movie") else "series"
+                    imdb = m.get("ids", {}).get("imdb", "")
+                    poster = f"https://images.metahub.space/poster/medium/{imdb}/img" if imdb else ""
+                    items.append({
+                        "title": m.get("title"),
+                        "year": m.get("year", ""),
+                        "type": mtype,
+                        "imdb": imdb,
+                        "rating": round(m.get("rating", 0), 1),
+                        "poster": poster
+                    })
+        except Exception as e:
+            sys.stderr.write(f"Trakt fetch error: {e}\n")
+        return items
+
+    def search_trakt(self, query):
+        if not query:
+            return []
+        url = f"https://api.trakt.tv/search/movie,show?query={urllib.parse.quote(query)}&extended=full&limit=16"
+        req = urllib.request.Request(url, headers={
+            "Content-Type": "application/json",
+            "trakt-api-version": "2",
+            "trakt-api-key": TRAKT_CLIENT_ID,
+            "User-Agent": "GoogleTV-Launcher/1.0"
+        })
+        items = []
+        try:
+            with urllib.request.urlopen(req, timeout=7.0) as resp:
+                raw = json.loads(resp.read().decode("utf-8"))
+                for it in raw:
+                    m = it.get("movie") or it.get("show")
+                    if not m:
+                        continue
+                    mtype = "movie" if "movie" in it else "series"
+                    imdb = m.get("ids", {}).get("imdb", "")
+                    poster = f"https://images.metahub.space/poster/medium/{imdb}/img" if imdb else ""
+                    items.append({
+                        "title": m.get("title"),
+                        "year": m.get("year", ""),
+                        "type": mtype,
+                        "imdb": imdb,
+                        "rating": round(m.get("rating", 0), 1),
+                        "poster": poster
+                    })
+        except Exception as e:
+            sys.stderr.write(f"Trakt search error: {e}\n")
+        return items
+
+    def get_sports_scores(self, league="nba"):
+        info = ESPN_LEAGUES.get(league.lower(), ESPN_LEAGUES["nba"])
+        url = info[1]
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        games = []
+        try:
+            with urllib.request.urlopen(req, timeout=7.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                for ev in data.get("events", []):
+                    comp = ev.get("competitions", [{}])[0]
+                    comps = comp.get("competitors", [])
+                    if len(comps) >= 2:
+                        home = comps[0]
+                        away = comps[1]
+                        status_type = comp.get("status", {}).get("type", {})
+                        state = status_type.get("state", "pre")
+                        detail = status_type.get("detail", status_type.get("description", ""))
+                        broadcasts = comp.get("broadcasts", [])
+                        network = broadcasts[0].get("names", [""])[0] if broadcasts and broadcasts[0].get("names") else ""
+                        odds = comp.get("odds", [{}])[0].get("details", "")
+                        games.append({
+                            "id": ev.get("id"),
+                            "state": state,
+                            "detail": detail,
+                            "network": network,
+                            "odds": odds,
+                            "away_name": away.get("team", {}).get("displayName", ""),
+                            "away_abbr": away.get("team", {}).get("abbreviation", ""),
+                            "away_score": away.get("score", "-"),
+                            "away_logo": away.get("team", {}).get("logo", ""),
+                            "home_name": home.get("team", {}).get("displayName", ""),
+                            "home_abbr": home.get("team", {}).get("abbreviation", ""),
+                            "home_score": home.get("score", "-"),
+                            "home_logo": home.get("team", {}).get("logo", ""),
+                        })
+        except Exception as e:
+            sys.stderr.write(f"ESPN fetch error: {e}\n")
+        return games
+
 
 def create_handler(server_ctx):
     class Handler(BaseHTTPRequestHandler):
@@ -2215,6 +2708,21 @@ def create_handler(server_ctx):
                 layout = server_ctx.get_layout()
                 return self._send(200, json.dumps(layout).encode("utf-8"))
 
+            if path == "/api/trakt/items":
+                shelf = query.get("shelf", ["watchlist"])[0]
+                items = server_ctx.get_trakt_items(shelf)
+                return self._send(200, json.dumps({"ok": True, "shelf": shelf, "items": items}).encode("utf-8"))
+
+            if path == "/api/trakt/search":
+                q = query.get("q", [""])[0]
+                items = server_ctx.search_trakt(q)
+                return self._send(200, json.dumps({"ok": True, "query": q, "items": items}).encode("utf-8"))
+
+            if path == "/api/sports/scores":
+                league = query.get("league", ["nba"])[0]
+                games = server_ctx.get_sports_scores(league)
+                return self._send(200, json.dumps({"ok": True, "league": league, "games": games}).encode("utf-8"))
+
             if path == "/api/files":
                 target_dir = query.get("path", ["/sdcard"])[0]
                 items = server_ctx.list_files(target_dir)
@@ -2280,6 +2788,24 @@ def create_handler(server_ctx):
                 data = json.loads(body_bytes.decode("utf-8"))
             except Exception:
                 data = {}
+
+            if path == "/api/trakt/play":
+                imdb_id = data.get("imdb_id", "").strip()
+                mtype = data.get("type", "movie").strip()
+                if not imdb_id:
+                    return self._send(400, b'{"error":"Missing imdb_id"}')
+                cmd = f"am start -a android.intent.action.VIEW -d 'stremio:///detail/{mtype}/{imdb_id}'"
+                err, out = server_ctx.run_tv(cmd)
+                return self._send(200 if err == 0 else 500, json.dumps({"ok": err == 0, "output": out}).encode("utf-8"))
+
+            if path == "/api/sports/tune":
+                network = data.get("network", "").lower()
+                if "espn" in network:
+                    cmd = "monkey -p com.espn.score_center -c android.intent.category.LAUNCHER 1 2>/dev/null || input keyevent KEYCODE_TV_INPUT_HDMI_1"
+                else:
+                    cmd = "input keyevent KEYCODE_TV_INPUT_HDMI_1"
+                err, out = server_ctx.run_tv(cmd)
+                return self._send(200 if err == 0 else 500, json.dumps({"ok": err == 0, "output": out}).encode("utf-8"))
 
             if path == "/api/key":
                 key_name = data.get("key", "").upper()
