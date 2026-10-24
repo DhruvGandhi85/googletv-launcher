@@ -357,6 +357,7 @@ public class MainActivity extends Activity {
         restoreInitialFocus();
 
         Intent launchIntent = getIntent();
+        handleConfigIntents(launchIntent);
         if (launchIntent != null && launchIntent.getBooleanExtra("SHOW_SETTINGS", false)) {
             launchNativeSettings();
         } else if (launchIntent != null && launchIntent.getBooleanExtra("SHOW_INPUTS", false)) {
@@ -4318,6 +4319,7 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        handleConfigIntents(intent);
         if (inputsScrim != null && inputsScrim.getVisibility() == View.VISIBLE) {
             hideInputsPanel();
             return;
@@ -4341,6 +4343,53 @@ public class MainActivity extends Activity {
         }
         if (hubScroll != null) {
             hubScroll.smoothScrollTo(0, 0);
+        }
+    }
+
+    private void handleConfigIntents(Intent intent) {
+        if (intent == null) return;
+        boolean traktChanged = false;
+        boolean sportsChanged = false;
+
+        if (intent.hasExtra("ENABLED_LEAGUES")) {
+            String raw = intent.getStringExtra("ENABLED_LEAGUES");
+            if (raw != null) {
+                Set<String> set = new HashSet<>();
+                for (String s : raw.split(",")) {
+                    String t = s.trim();
+                    if (!t.isEmpty()) set.add(t);
+                }
+                HubDataFetcher.setEnabledLeagues(this, set);
+                sportsChanged = true;
+            }
+        }
+
+        if (intent.hasExtra("TRAKT_USERNAME")) {
+            String u = intent.getStringExtra("TRAKT_USERNAME");
+            if (u != null && !u.trim().isEmpty()) {
+                HubDataFetcher.prefs(this).edit().putString("trakt_username", u.trim()).apply();
+                traktChanged = true;
+            }
+        }
+
+        if (intent.hasExtra("HIDDEN_TRAKT_SHELVES")) {
+            String raw = intent.getStringExtra("HIDDEN_TRAKT_SHELVES");
+            if (raw != null) {
+                Set<String> set = new HashSet<>();
+                for (String s : raw.split(",")) {
+                    String t = s.trim();
+                    if (!t.isEmpty()) set.add(t);
+                }
+                setHiddenTraktShelves(set);
+                traktChanged = true;
+            }
+        }
+
+        if (sportsChanged) {
+            refreshSportsData(true);
+        }
+        if (traktChanged) {
+            refreshTraktData(true);
         }
     }
 

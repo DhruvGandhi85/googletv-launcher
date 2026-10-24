@@ -1988,6 +1988,24 @@ HTML_MASTER = """<!DOCTYPE html>
     <section class="tab-panel" id="panel-media-trakt">
       <div class="card">
         <div class="card-head">
+          <span class="card-title">TV Trakt Shelves</span>
+          <button class="btn btn-sm btn-primary" onclick="pushTraktToTv()">Push to TV</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <input type="text" id="traktUsernameInput" class="text-input" style="max-width:240px; padding:6px 12px;" value="DhruvG85" placeholder="Trakt Username">
+          <button class="btn btn-sm" onclick="saveTraktUser()">Set User</button>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="traktTvShelves">
+          <button class="btn btn-sm active" data-shelf="Watchlist" onclick="toggleTvShelf(this)">Watchlist</button>
+          <button class="btn btn-sm active" data-shelf="In Progress" onclick="toggleTvShelf(this)">In Progress</button>
+          <button class="btn btn-sm active" data-shelf="Trending Movies" onclick="toggleTvShelf(this)">Trending Movies</button>
+          <button class="btn btn-sm active" data-shelf="Trending Shows" onclick="toggleTvShelf(this)">Trending Shows</button>
+          <button class="btn btn-sm active" data-shelf="User Lists" onclick="toggleTvShelf(this)">User Lists</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="card-title">Trakt Cloud</span>
             <span class="badge badge-on" id="traktUserBadge">DhruvG85</span>
@@ -2013,6 +2031,25 @@ HTML_MASTER = """<!DOCTYPE html>
 
     <!-- ================= 5. MEDIA -> SPORTS ================= -->
     <section class="tab-panel" id="panel-media-sports">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">TV Sports Leagues</span>
+          <button class="btn btn-sm btn-primary" onclick="pushSportsToTv()">Push to TV</button>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="sportsTvLeagues">
+          <button class="btn btn-sm active" data-league="NBA" onclick="toggleTvLeague(this)">NBA</button>
+          <button class="btn btn-sm active" data-league="NFL" onclick="toggleTvLeague(this)">NFL</button>
+          <button class="btn btn-sm active" data-league="EPL" onclick="toggleTvLeague(this)">EPL</button>
+          <button class="btn btn-sm active" data-league="UCL" onclick="toggleTvLeague(this)">UCL</button>
+          <button class="btn btn-sm active" data-league="MLB" onclick="toggleTvLeague(this)">MLB</button>
+          <button class="btn btn-sm active" data-league="NHL" onclick="toggleTvLeague(this)">NHL</button>
+          <button class="btn btn-sm active" data-league="CFB" onclick="toggleTvLeague(this)">CFB</button>
+          <button class="btn btn-sm active" data-league="CBB" onclick="toggleTvLeague(this)">CBB</button>
+          <button class="btn btn-sm active" data-league="MLS" onclick="toggleTvLeague(this)">MLS</button>
+          <button class="btn btn-sm active" data-league="WNBA" onclick="toggleTvLeague(this)">WNBA</button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <span class="card-title">ESPN Live Scoreboard</span>
@@ -2280,8 +2317,14 @@ HTML_MASTER = """<!DOCTYPE html>
 
       if (mainTabId === 'launcher' && subTabId === 'layout') loadLayout();
       if (mainTabId === 'launcher' && subTabId === 'apps') loadApps();
-      if (mainTabId === 'media' && subTabId === 'trakt') loadTrakt(currentTraktShelf);
-      if (mainTabId === 'media' && subTabId === 'sports') loadSports(currentSportsLeague);
+      if (mainTabId === 'media' && subTabId === 'trakt') {
+        loadTvTraktSettings();
+        loadTrakt(currentTraktShelf);
+      }
+      if (mainTabId === 'media' && subTabId === 'sports') {
+        loadTvSportsSettings();
+        loadSports(currentSportsLeague);
+      }
       if (mainTabId === 'storage' && subTabId === 'files') loadFiles(currentPath);
       if (mainTabId === 'system' && subTabId === 'debloat') loadPresetDebloat();
       if (mainTabId === 'system' && subTabId === 'health') loadHealth();
@@ -2425,6 +2468,92 @@ HTML_MASTER = """<!DOCTYPE html>
         autoInterval = setInterval(refreshScreen, 3000);
         btn.textContent = 'Auto (3s)';
         refreshScreen();
+      }
+    // TV Trakt & Sports Config
+    function toggleTvShelf(btn) {
+      btn.classList.toggle('active');
+    }
+
+    function toggleTvLeague(btn) {
+      btn.classList.toggle('active');
+    }
+
+    async function loadTvSportsSettings() {
+      try {
+        const res = await fetch('/api/sports/settings');
+        const data = await res.json();
+        if (data.ok && data.enabled) {
+          document.querySelectorAll('#sportsTvLeagues button').forEach(b => {
+            b.classList.toggle('active', data.enabled.includes(b.dataset.league));
+          });
+        }
+      } catch (e) {}
+    }
+
+    async function pushSportsToTv() {
+      const enabled = [];
+      document.querySelectorAll('#sportsTvLeagues button.active').forEach(b => {
+        enabled.push(b.dataset.league);
+      });
+      showToast('Pushing sports to TV...');
+      try {
+        const res = await fetch('/api/sports/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+        const data = await res.json();
+        if (data.ok) showToast('TV sports updated');
+        else showToast('Sync failed: ' + (data.output || 'TV offline'));
+      } catch (e) {
+        showToast('Connection error');
+      }
+    }
+
+    async function loadTvTraktSettings() {
+      try {
+        const res = await fetch('/api/trakt/settings');
+        const data = await res.json();
+        if (data.ok) {
+          if (data.username) {
+            document.getElementById('traktUsernameInput').value = data.username;
+            document.getElementById('traktUserBadge').textContent = data.username;
+          }
+          if (data.hidden) {
+            document.querySelectorAll('#traktTvShelves button').forEach(b => {
+              b.classList.toggle('active', !data.hidden.includes(b.dataset.shelf));
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
+    function saveTraktUser() {
+      const u = document.getElementById('traktUsernameInput').value.trim();
+      if (!u) return;
+      document.getElementById('traktUserBadge').textContent = u;
+      loadTrakt(currentTraktShelf);
+      pushTraktToTv();
+    }
+
+    async function pushTraktToTv() {
+      const u = document.getElementById('traktUsernameInput').value.trim() || 'DhruvG85';
+      const hidden = [];
+      document.querySelectorAll('#traktTvShelves button:not(.active)').forEach(b => {
+        hidden.push(b.dataset.shelf);
+      });
+      showToast('Pushing Trakt shelves to TV...');
+      try {
+        const res = await fetch('/api/trakt/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, hidden })
+        });
+        const data = await res.json();
+        if (data.ok) showToast('TV Trakt shelves updated');
+        else showToast('Sync failed: ' + (data.output || 'TV offline'));
+      } catch (e) {
+        showToast('Connection error');
       }
     }
 
@@ -3180,6 +3309,26 @@ class WebRemoteServer:
         os.environ["TV_HOST"] = tv_host
         self.lock = threading.Lock()
         self.shot_path = "/tmp/tv_remote_shot.png"
+        self.sports_enabled = ["NBA", "NFL", "EPL", "UCL", "MLB", "NHL", "CFB", "CBB", "MLS", "WNBA"]
+        self.trakt_settings = {
+            "username": "DhruvG85",
+            "hidden": []
+        }
+
+    def push_sports_settings(self, enabled_leagues):
+        self.sports_enabled = enabled_leagues
+        leagues_str = ",".join(enabled_leagues)
+        cmd = f'am start -n com.gathin.tvhome/.MainActivity --es ENABLED_LEAGUES "{leagues_str}"'
+        err, out = self.run_tv(cmd)
+        return err == 0, out
+
+    def push_trakt_settings(self, username, hidden_shelves):
+        self.trakt_settings["username"] = username
+        self.trakt_settings["hidden"] = hidden_shelves
+        hidden_str = ",".join(hidden_shelves)
+        cmd = f'am start -n com.gathin.tvhome/.MainActivity --es TRAKT_USERNAME "{username}" --es HIDDEN_TRAKT_SHELVES "{hidden_str}"'
+        err, out = self.run_tv(cmd)
+        return err == 0, out
 
     def get_device(self, timeout=2.0):
         try:
@@ -3580,6 +3729,16 @@ def create_handler(server_ctx):
                 games = server_ctx.get_sports_scores(league)
                 return self._send(200, json.dumps({"ok": True, "league": league, "games": games}).encode("utf-8"))
 
+            if path == "/api/sports/settings":
+                return self._send(200, json.dumps({"ok": True, "enabled": server_ctx.sports_enabled}).encode("utf-8"))
+
+            if path == "/api/trakt/settings":
+                return self._send(200, json.dumps({
+                    "ok": True,
+                    "username": server_ctx.trakt_settings["username"],
+                    "hidden": server_ctx.trakt_settings["hidden"]
+                }).encode("utf-8"))
+
             if path == "/api/files":
                 target_dir = query.get("path", ["/sdcard"])[0]
                 items = server_ctx.list_files(target_dir)
@@ -3663,6 +3822,17 @@ def create_handler(server_ctx):
                     cmd = "input keyevent KEYCODE_TV_INPUT_HDMI_1"
                 err, out = server_ctx.run_tv(cmd)
                 return self._send(200 if err == 0 else 500, json.dumps({"ok": err == 0, "output": out}).encode("utf-8"))
+
+            if path == "/api/sports/settings":
+                enabled = data.get("enabled", [])
+                ok, out = server_ctx.push_sports_settings(enabled)
+                return self._send(200 if ok else 500, json.dumps({"ok": ok, "output": out}).encode("utf-8"))
+
+            if path == "/api/trakt/settings":
+                username = data.get("username", "DhruvG85")
+                hidden = data.get("hidden", [])
+                ok, out = server_ctx.push_trakt_settings(username, hidden)
+                return self._send(200 if ok else 500, json.dumps({"ok": ok, "output": out}).encode("utf-8"))
 
             if path == "/api/key":
                 key_name = data.get("key", "").upper()
