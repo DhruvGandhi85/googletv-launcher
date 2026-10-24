@@ -136,10 +136,8 @@ public class RemoteKeyMapperService extends AccessibilityService {
                 launchTarget(mapped);
                 return true;
             }
-            if (com.gathin.tvhome.pip.PipOverlayService.isRunning) {
-                com.gathin.tvhome.pip.PipOverlayService.swapInputs(this);
-                return true;
-            }
+            com.gathin.tvhome.pip.PipOverlayService.swapInputs(this);
+            return true;
         }
 
         // Do not intercept native Color Buttons so they always pass to IPTV

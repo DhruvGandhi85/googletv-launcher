@@ -126,6 +126,7 @@ public class PipOverlayService extends Service {
                 PixelFormat.TRANSLUCENT
         );
 
+        currentCorner = getSharedPreferences(PREFS_PIP, MODE_PRIVATE).getInt(KEY_CORNER, 0);
         setWindowGravityForCorner(currentCorner);
         windowParams.x = dp(24);
         windowParams.y = dp(24);
@@ -240,6 +241,7 @@ public class PipOverlayService extends Service {
 
     public void cycleCorner() {
         currentCorner = (currentCorner + 1) % 4;
+        getSharedPreferences(PREFS_PIP, MODE_PRIVATE).edit().putInt(KEY_CORNER, currentCorner).apply();
         setWindowGravityForCorner(currentCorner);
         try {
             if (overlayView != null && windowManager != null) {
@@ -261,10 +263,10 @@ public class PipOverlayService extends Service {
         String currentName = isAActive ? inAName : inBName;
 
         if (titleView != null) {
-            titleView.setText("Paired: " + targetName);
+            titleView.setText(targetName);
         }
         if (subView != null) {
-            subView.setText("Active: " + currentName);
+            subView.setText("Active: " + currentName + " • '123' to Swap");
         }
     }
 
@@ -291,14 +293,53 @@ public class PipOverlayService extends Service {
                 }
             } else {
                 if (scoreView != null) {
-                    scoreView.setText("⚡ Ready to Swap • Press Yellow button or click Swap");
+                    scoreView.setText("Ready • Press '123' or click Swap");
                     scoreView.setVisibility(View.VISIBLE);
                 }
             }
         });
     }
 
+    public static void launchInputSource(Context ctx, String sourceId, String sourceName) {
+        if (sourceId == null || sourceId.isEmpty()) return;
+        try {
+            if (sourceId.startsWith("pkg:")) {
+                String pkg = sourceId.substring(4);
+                PackageManager pm = ctx.getPackageManager();
+                Intent i = pm.getLeanbackLaunchIntentForPackage(pkg);
+                if (i == null) i = pm.getLaunchIntentForPackage(pkg);
+                if (i != null) {
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                    ctx.startActivity(i);
+                    return;
+                }
+            } else {
+                PackageManager pm = ctx.getPackageManager();
+                Uri uri = TvContract.buildChannelsUriForInput(sourceId);
+                Intent i = new Intent(Intent.ACTION_VIEW, uri);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (i.resolveActivity(pm) != null) {
+                    ctx.startActivity(i);
+                    return;
+                }
+                Intent launch = pm.getLeanbackLaunchIntentForPackage("com.tcl.tv");
+                if (launch == null) launch = pm.getLaunchIntentForPackage("com.tcl.tv");
+                if (launch != null) {
+                    launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    ctx.startActivity(launch);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            Toast.makeText(ctx, "Could not open " + sourceName, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     public static void swapInputs(Context ctx) {
+        if (!isRunning) {
+            start(ctx);
+        }
+
         SharedPreferences sp = ctx.getSharedPreferences(PREFS_PIP, MODE_PRIVATE);
         String inA = sp.getString(KEY_INPUT_A, DEFAULT_INPUT_A);
         String inAName = sp.getString(KEY_INPUT_A_NAME, DEFAULT_INPUT_A_NAME);
@@ -311,15 +352,7 @@ public class PipOverlayService extends Service {
 
         sp.edit().putString(KEY_CURRENT_ACTIVE, nextInput).apply();
 
-        // Tune hardware TV input
-        try {
-            Uri uri = TvContract.buildChannelsUriForInput(nextInput);
-            Intent i = new Intent(Intent.ACTION_VIEW, uri);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            ctx.startActivity(i);
-        } catch (Exception e) {
-            Toast.makeText(ctx, "Could not switch to " + nextName, Toast.LENGTH_SHORT).show();
-        }
+        launchInputSource(ctx, nextInput, nextName);
 
         if (activeInstance != null) {
             activeInstance.refreshOverlayLabels();

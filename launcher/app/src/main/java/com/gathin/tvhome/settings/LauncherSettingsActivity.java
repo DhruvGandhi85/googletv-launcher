@@ -271,7 +271,7 @@ public class LauncherSettingsActivity extends Activity {
         int corner = sp.getInt(PipOverlayService.KEY_CORNER, 0);
         String cornerText = corner == 0 ? "Top-Right" : corner == 1 ? "Bottom-Right" : corner == 2 ? "Bottom-Left" : "Top-Left";
 
-        createRow("Active Inputs", inAName + " ⮂ " + inBName, () -> {
+        createRow("Active Pair", inAName + " ⮂ " + inBName, () -> {
             startActivity(new Intent(this, PipSettingsActivity.class));
         });
 
@@ -298,7 +298,7 @@ public class LauncherSettingsActivity extends Activity {
             new Handler(Looper.getMainLooper()).postDelayed(() -> loadCategoryContent(0), 300);
         });
 
-        createRow("Configure HDMI Ports", "Open", () -> {
+        createRow("Configure DualView", "Open", () -> {
             startActivity(new Intent(this, PipSettingsActivity.class));
         });
     }

@@ -1,8 +1,11 @@
 package com.gathin.tvhome.pip;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.media.tv.TvContract;
@@ -27,9 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Dedicated TV App & Input Settings for HDMI DualView & Picture-in-Picture.
- * Allows pairing any two HDMI inputs (e.g. PlayStation 5 on HDMI 2 + Fire TV Stick on HDMI 3),
- * configuring floating PiP placement, and activating the seamless one-click swap session.
+ * Dedicated TV App & Input Settings for HDMI & Google TV App DualView.
+ * Supports pairing 1 Google TV App + 1 HDMI, 2 Google TV Apps, or 2 HDMI ports,
+ * configuring floating PiP placement, and activating instant remote swapping.
  */
 public class PipSettingsActivity extends Activity {
 
@@ -69,6 +72,9 @@ public class PipSettingsActivity extends Activity {
     }
 
     private void initAvailableInputs() {
+        availableInputs.clear();
+
+        // 1. Hardware HDMI Inputs
         availableInputs.add(new HdmiOption(
                 "com.tcl.tvinput/.TvPassThroughService/HW15",
                 "HDMI 1",
@@ -78,7 +84,7 @@ public class PipSettingsActivity extends Activity {
         availableInputs.add(new HdmiOption(
                 "com.tcl.tvinput/.TvPassThroughService/HDMI200004",
                 "HDMI 2 • PlayStation 5",
-                "eARC / 4K 120Hz Gaming Console",
+                "4K 120Hz Gaming Console",
                 "🎮"
         ));
         availableInputs.add(new HdmiOption(
@@ -93,6 +99,57 @@ public class PipSettingsActivity extends Activity {
                 "Auxiliary HDMI Port",
                 "🔌"
         ));
+
+        // 2. Installed Google TV Apps
+        PackageManager pm = getPackageManager();
+        Intent leanbackIntent = new Intent(Intent.ACTION_MAIN, null);
+        leanbackIntent.addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
+        List<ResolveInfo> activities = pm.queryIntentActivities(leanbackIntent, 0);
+
+        if (activities != null) {
+            for (ResolveInfo ri : activities) {
+                if (ri.activityInfo == null) continue;
+                String pkg = ri.activityInfo.packageName;
+                if (pkg.equals(getPackageName()) ||
+                    pkg.equals("com.google.android.apps.tv.launcherx") ||
+                    pkg.equals("com.android.tv.settings") ||
+                    pkg.equals("com.tcl.suspension") ||
+                    pkg.equals("com.tcl.dashboard")) {
+                    continue;
+                }
+                CharSequence labelSeq = ri.loadLabel(pm);
+                String label = labelSeq != null ? labelSeq.toString() : pkg;
+                String icon = getAppIconEmoji(pkg, label);
+                availableInputs.add(new HdmiOption(
+                        "pkg:" + pkg,
+                        label,
+                        "Google TV App",
+                        icon
+                ));
+            }
+        }
+    }
+
+    private String getAppIconEmoji(String pkg, String label) {
+        String p = pkg.toLowerCase();
+        String l = label.toLowerCase();
+        if (p.contains("stremio") || l.contains("stremio")) return "🎬";
+        if (p.contains("amazon") || l.contains("prime")) return "🎬";
+        if (p.contains("youtube") || l.contains("youtube")) return "▶️";
+        if (p.contains("netflix") || l.contains("netflix")) return "🍿";
+        if (p.contains("spotify") || l.contains("spotify")) return "🎵";
+        if (p.contains("iptv") || p.contains("stc") || l.contains("iptv") || l.contains("sky")) return "📡";
+        if (p.contains("disney") || l.contains("disney")) return "✨";
+        if (p.contains("apple") || l.contains("apple")) return "🍎";
+        if (p.contains("peacock") || l.contains("peacock")) return "🦚";
+        if (p.contains("paramount") || p.contains("cbs") || l.contains("paramount")) return "⛰️";
+        if (p.contains("hulu") || l.contains("hulu")) return "🟢";
+        if (p.contains("stream") || p.contains("beam") || l.contains("max")) return "🍿";
+        if (p.contains("trakt") || l.contains("trakt")) return "📊";
+        if (p.contains("nba") || l.contains("nba")) return "🏀";
+        if (p.contains("nfl") || l.contains("nfl")) return "🏈";
+        if (p.contains("downloader")) return "⬇️";
+        return "📱";
     }
 
     private void loadSavedPreferences() {
@@ -100,11 +157,25 @@ public class PipSettingsActivity extends Activity {
         String inA = sp.getString(PipOverlayService.KEY_INPUT_A, PipOverlayService.DEFAULT_INPUT_A);
         String inB = sp.getString(PipOverlayService.KEY_INPUT_B, PipOverlayService.DEFAULT_INPUT_B);
 
+        boolean foundA = false;
+        boolean foundB = false;
         for (int i = 0; i < availableInputs.size(); i++) {
-            if (availableInputs.get(i).id.equals(inA)) selectedIndexA = i;
-            if (availableInputs.get(i).id.equals(inB)) selectedIndexB = i;
+            if (availableInputs.get(i).id.equals(inA)) {
+                selectedIndexA = i;
+                foundA = true;
+            }
+            if (availableInputs.get(i).id.equals(inB)) {
+                selectedIndexB = i;
+                foundB = true;
+            }
         }
-        if (selectedIndexB == selectedIndexA) {
+        if (!foundA && !availableInputs.isEmpty()) {
+            selectedIndexA = 1 < availableInputs.size() ? 1 : 0;
+        }
+        if (!foundB && availableInputs.size() > 1) {
+            selectedIndexB = (selectedIndexA + 1) % availableInputs.size();
+        }
+        if (selectedIndexB == selectedIndexA && availableInputs.size() > 1) {
             selectedIndexB = (selectedIndexA + 1) % availableInputs.size();
         }
         selectedCorner = sp.getInt(PipOverlayService.KEY_CORNER, 0);
@@ -149,41 +220,31 @@ public class PipSettingsActivity extends Activity {
 
         // Setting Card 1: Primary Input A
         inputAValueView = createSettingRow(container, "Primary Input",
-                availableInputs.get(selectedIndexA).name,
-                () -> {
-                    selectedIndexA = (selectedIndexA + 1) % availableInputs.size();
-                    if (selectedIndexA == selectedIndexB) selectedIndexA = (selectedIndexA + 1) % availableInputs.size();
-                    updateLabels();
-                    savePreferences();
-                });
+                availableInputs.get(selectedIndexA).icon + "  " + availableInputs.get(selectedIndexA).name,
+                () -> cycleInput(0, false),
+                () -> cycleInput(0, true),
+                () -> showSourcePickerDialog(0));
 
         // Setting Card 2: Secondary Input B
         inputBValueView = createSettingRow(container, "Secondary Input",
-                availableInputs.get(selectedIndexB).name,
-                () -> {
-                    selectedIndexB = (selectedIndexB + 1) % availableInputs.size();
-                    if (selectedIndexB == selectedIndexA) selectedIndexB = (selectedIndexB + 1) % availableInputs.size();
-                    updateLabels();
-                    savePreferences();
-                });
+                availableInputs.get(selectedIndexB).icon + "  " + availableInputs.get(selectedIndexB).name,
+                () -> cycleInput(1, false),
+                () -> cycleInput(1, true),
+                () -> showSourcePickerDialog(1));
 
         // Setting Card 3: PiP Position
         cornerValueView = createSettingRow(container, "Position",
                 getCornerName(selectedCorner),
-                () -> {
-                    selectedCorner = (selectedCorner + 1) % 4;
-                    updateLabels();
-                    savePreferences();
-                });
+                () -> cycleCorner(false),
+                () -> cycleCorner(true),
+                () -> cycleCorner(true));
 
         // Setting Card 4: Remote Hotkey
         hotkeyValueView = createSettingRow(container, "Swap Key",
                 getHotkeyName(selectedHotkey),
-                () -> {
-                    selectedHotkey = (selectedHotkey + 1) % 3;
-                    updateLabels();
-                    assignRemoteHotkey();
-                });
+                () -> cycleHotkey(false),
+                () -> cycleHotkey(true),
+                () -> cycleHotkey(true));
 
         // Action Buttons Section
         LinearLayout actionRow = new LinearLayout(this);
@@ -215,7 +276,70 @@ public class PipSettingsActivity extends Activity {
         setContentView(root);
     }
 
-    private TextView createSettingRow(ViewGroup parent, String title, String value, Runnable onClick) {
+    private void cycleInput(int slot, boolean forward) {
+        if (availableInputs.isEmpty()) return;
+        int delta = forward ? 1 : -1;
+        if (slot == 0) {
+            selectedIndexA = (selectedIndexA + delta + availableInputs.size()) % availableInputs.size();
+            if (selectedIndexA == selectedIndexB && availableInputs.size() > 1) {
+                selectedIndexA = (selectedIndexA + delta + availableInputs.size()) % availableInputs.size();
+            }
+        } else {
+            selectedIndexB = (selectedIndexB + delta + availableInputs.size()) % availableInputs.size();
+            if (selectedIndexB == selectedIndexA && availableInputs.size() > 1) {
+                selectedIndexB = (selectedIndexB + delta + availableInputs.size()) % availableInputs.size();
+            }
+        }
+        updateLabels();
+        savePreferences();
+    }
+
+    private void cycleCorner(boolean forward) {
+        int delta = forward ? 1 : 3;
+        selectedCorner = (selectedCorner + delta) % 4;
+        updateLabels();
+        savePreferences();
+    }
+
+    private void cycleHotkey(boolean forward) {
+        int delta = forward ? 1 : 2;
+        selectedHotkey = (selectedHotkey + delta) % 3;
+        updateLabels();
+        assignRemoteHotkey();
+    }
+
+    private void showSourcePickerDialog(int slot) {
+        if (availableInputs.isEmpty()) return;
+        String[] items = new String[availableInputs.size()];
+        for (int i = 0; i < availableInputs.size(); i++) {
+            HdmiOption opt = availableInputs.get(i);
+            items[i] = opt.icon + "  " + opt.name;
+        }
+        int current = slot == 0 ? selectedIndexA : selectedIndexB;
+        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle(slot == 0 ? "Select Primary Display" : "Select Secondary Display")
+                .setSingleChoiceItems(items, current, (dialog, which) -> {
+                    if (slot == 0) {
+                        selectedIndexA = which;
+                        if (selectedIndexA == selectedIndexB && availableInputs.size() > 1) {
+                            selectedIndexB = (selectedIndexA + 1) % availableInputs.size();
+                        }
+                    } else {
+                        selectedIndexB = which;
+                        if (selectedIndexB == selectedIndexA && availableInputs.size() > 1) {
+                            selectedIndexA = (selectedIndexB + 1) % availableInputs.size();
+                        }
+                    }
+                    updateLabels();
+                    savePreferences();
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private TextView createSettingRow(ViewGroup parent, String title, String value,
+                                      Runnable onPrev, Runnable onNext, Runnable onSelect) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -258,7 +382,25 @@ public class PipSettingsActivity extends Activity {
             }
         });
 
-        row.setOnClickListener(v -> onClick.run());
+        row.setOnClickListener(v -> {
+            if (onSelect != null) onSelect.run();
+        });
+
+        row.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && onPrev != null) {
+                onPrev.run();
+                return true;
+            } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && onNext != null) {
+                onNext.run();
+                return true;
+            } else if ((keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) && onSelect != null) {
+                onSelect.run();
+                return true;
+            }
+            return false;
+        });
+
         parent.addView(row);
         return valueTv;
     }
@@ -362,15 +504,8 @@ public class PipSettingsActivity extends Activity {
                 .putString(PipOverlayService.KEY_CURRENT_ACTIVE, optA.id)
                 .apply();
 
-        // 3. Switch TV directly to Input A
-        try {
-            Uri uri = TvContract.buildChannelsUriForInput(optA.id);
-            Intent i = new Intent(Intent.ACTION_VIEW, uri);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
-        } catch (Exception e) {
-            Toast.makeText(this, "Opening " + optA.name + "...", Toast.LENGTH_SHORT).show();
-        }
+        // 3. Switch TV directly to Input A (App or HDMI port)
+        PipOverlayService.launchInputSource(this, optA.id, optA.name);
 
         finish();
     }

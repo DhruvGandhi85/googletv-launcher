@@ -12,9 +12,9 @@ Written in native Java with zero bloat and a sub-80 MB memory footprint.
 | :---: | :---: |
 | <img src="docs/launcher-home.png" width="480" alt="Home" /> | <img src="docs/launcher-settings.png" width="480" alt="Settings" /> |
 
-| DualView Setup | Floating Overlay |
+| DualView Setup | Floating Overlay Over App |
 | :---: | :---: |
-| <img src="docs/hdmi-dualview-pip.png" width="480" alt="DualView Setup" /> | <img src="docs/pip-overlay-active.png" width="480" alt="Floating Overlay" /> |
+| <img src="docs/pip-settings-dualview.png" width="480" alt="DualView Setup" /> | <img src="docs/pip-active-over-app.png" width="480" alt="Floating Overlay" /> |
 
 | Inputs |
 | :---: |
@@ -25,9 +25,12 @@ Written in native Java with zero bloat and a sub-80 MB memory footprint.
 ## Features
 
 ### DualView (Picture-in-Picture)
-* Pair any two HDMI inputs (e.g. HDMI 2 console + HDMI 3 streaming device).
-* Position the floating overlay in any corner.
-* Instant 1-click video swap via the "123" remote button.
+* **1 Google TV App + 1 HDMI Input**: Watch Stremio, Sky TV, or YouTube with a live floating preview and instant swap to PlayStation 5 or console.
+* **2 Google TV Apps**: Multitask between two streaming apps (e.g. Prime Video + Stremio / Sky TV).
+* **2 HDMI Inputs**: Pair two physical HDMI inputs (e.g. PlayStation 5 + Fire TV Stick).
+* **Instant 1-Click Swap**: Toggle between sources with the physical "123" remote button or the floating overlay `Swap` trigger.
+* **Native Source Picker**: Auto-detects all installed Leanback apps and hardware HDMI ports.
+* **Floating Overlay**: Live sports scores ticker, draggable/cycleable corners (`Move`), and clean minimal typography.
 
 ### Settings App
 * Standalone Leanback TV app with two-pane navigation.
