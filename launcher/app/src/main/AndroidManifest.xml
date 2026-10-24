@@ -124,5 +124,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- stock_home_redirect probe at boot: invisible activity that closes right away -->
+        <activity
+            android:name=".ProbeActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 </manifest>

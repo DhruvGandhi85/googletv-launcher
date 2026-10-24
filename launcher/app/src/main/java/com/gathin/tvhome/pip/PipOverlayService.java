@@ -315,7 +315,16 @@ public class PipOverlayService extends Service {
                 }
             } else {
                 PackageManager pm = ctx.getPackageManager();
-                Uri uri = TvContract.buildChannelsUriForInput(sourceId);
+                String finalSourceId = sourceId;
+                try {
+                    android.media.tv.TvInputManager tim = (android.media.tv.TvInputManager) ctx.getSystemService(Context.TV_INPUT_SERVICE);
+                    if (tim != null) {
+                        android.media.tv.TvInputInfo info = tim.getTvInputInfo(sourceId);
+                        if (info != null && info.getParentId() != null) finalSourceId = info.getParentId();
+                    }
+                } catch (Exception ignored) {}
+
+                Uri uri = TvContract.buildChannelsUriForInput(finalSourceId);
                 Intent i = new Intent(Intent.ACTION_VIEW, uri);
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 if (i.resolveActivity(pm) != null) {

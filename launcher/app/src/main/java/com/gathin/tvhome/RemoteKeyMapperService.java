@@ -79,6 +79,24 @@ public class RemoteKeyMapperService extends AccessibilityService {
         return out;
     }
 
+    private GamepadPassthrough gamepads;
+
+    @Override
+    protected void onServiceConnected() {
+        super.onServiceConnected();
+        gamepads = new GamepadPassthrough(this);
+        gamepads.start();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (gamepads != null) {
+            gamepads.stop();
+            gamepads = null;
+        }
+    }
+
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
     }
@@ -90,6 +108,12 @@ public class RemoteKeyMapperService extends AccessibilityService {
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
         if (event.getAction() != KeyEvent.ACTION_DOWN) {
+            return false;
+        }
+
+        // Pass game controller inputs straight through so games have zero-latency raw button access
+        if (GamepadPassthrough.isGamepad(event.getSource()) ||
+            (event.getDevice() != null && GamepadPassthrough.isGamepad(event.getDevice().getSources()))) {
             return false;
         }
 

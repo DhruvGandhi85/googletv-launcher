@@ -4349,7 +4349,16 @@ public class MainActivity extends Activity {
         PackageManager pm = getPackageManager();
 
         if (inputId != null) {
-            Uri uri = TvContract.buildChannelsUriForInput(inputId);
+            String sourceId = inputId;
+            try {
+                android.media.tv.TvInputManager tim = (android.media.tv.TvInputManager) getSystemService(TV_INPUT_SERVICE);
+                if (tim != null) {
+                    android.media.tv.TvInputInfo info = tim.getTvInputInfo(inputId);
+                    if (info != null && info.getParentId() != null) sourceId = info.getParentId();
+                }
+            } catch (Exception ignored) {}
+
+            Uri uri = TvContract.buildChannelsUriForInput(sourceId);
             Intent i = new Intent(Intent.ACTION_VIEW, uri);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             if (i.resolveActivity(pm) != null) {
