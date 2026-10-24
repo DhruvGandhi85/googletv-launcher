@@ -74,6 +74,20 @@ KEYCODES = {
     "NUM_7": 14,
     "NUM_8": 15,
     "NUM_9": 16,
+    "INPUT": 178,
+    "TV_INPUT": 178,
+    "SOURCE": 178,
+    "ASSIST": 231,
+    "VOICE": 231,
+    "TV": 170,
+    "EXIT": 4,
+    "RETURN": 4,
+    "OPTION": 82,
+    "DISPLAY": 165,
+    "ZOOM": 268,
+    "PICTURE_MODE": 256,
+    "AUDIO_MODE": 257,
+    "USB": 255,
 }
 
 TRAKT_CLIENT_ID = "TAFn3uRVPHeS8skvQDnS_DyymbWYbs6Sm9Q-IempuEc"
@@ -517,6 +531,570 @@ HTML_MASTER = """<!DOCTYPE html>
     .btn-yellow { color: #facc15; }
     .btn-blue { color: #60a5fa; }
 
+    /* ================= VIRTUAL COPIES OF REMOTES ================= */
+    .remote-model-view {
+      width: 100%;
+    }
+
+    /* 1. TCL GOOGLE TV VOICE REMOTE (RC902V) */
+    .remote-tcl {
+      width: 272px;
+      max-width: 100%;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 25%, rgba(0,0,0,0.2) 75%, rgba(255,255,255,0.04) 100%),
+        repeating-linear-gradient(90deg, #2c2f36 0px, #2c2f36 1px, #262930 1px, #262930 2px),
+        linear-gradient(180deg, #282b33 0%, #1c1d22 55%, #15161a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 38px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+      padding: 22px 18px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      user-select: none;
+    }
+    .tcl-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 4px;
+    }
+    .tcl-btn-round {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #1e2026;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      outline: none;
+    }
+    .tcl-btn-round:active {
+      transform: scale(0.92);
+      background: #2a2e38;
+      color: var(--accent);
+    }
+    .tcl-btn-power {
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+    .tcl-btn-power:active {
+      background: rgba(239, 68, 68, 0.2);
+    }
+    .tcl-mic-cluster {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .tcl-pinhole {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #0d0e12;
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.9);
+    }
+    .tcl-led-dots {
+      display: flex;
+      gap: 3px;
+    }
+    .tcl-led-dots span {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.6);
+    }
+    .tcl-dpad {
+      position: relative;
+      width: 144px;
+      height: 144px;
+      border-radius: 50%;
+      background: #17181d;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.65), 0 3px 8px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 2px 0;
+    }
+    .tcl-dpad-dir {
+      position: absolute;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s ease;
+      outline: none;
+    }
+    .tcl-dpad-dir:active {
+      color: #fff;
+      transform: scale(1.2);
+    }
+    .tcl-dpad-up { top: 8px; left: 50%; transform: translateX(-50%); width: 48px; height: 32px; }
+    .tcl-dpad-down { bottom: 8px; left: 50%; transform: translateX(-50%); width: 48px; height: 32px; }
+    .tcl-dpad-left { left: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 48px; }
+    .tcl-dpad-right { right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 48px; }
+    .tcl-dpad-center {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #242730;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: all 0.1s ease;
+      outline: none;
+    }
+    .tcl-dpad-center:active {
+      background: var(--accent);
+      transform: scale(0.94);
+    }
+    .tcl-btn-assistant {
+      width: 42px;
+      height: 42px;
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+    .tcl-rockers-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 6px;
+    }
+    .tcl-rocker-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .tcl-rocker-label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #64748b;
+      letter-spacing: 0.05em;
+    }
+    .tcl-rocker {
+      width: 38px;
+      height: 90px;
+      border-radius: 19px;
+      background: #1b1c21;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .tcl-rocker button {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s ease;
+      outline: none;
+    }
+    .tcl-rocker button:active {
+      background: #282c36;
+      color: var(--accent);
+    }
+    .tcl-rocker-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.05);
+      margin: 0 6px;
+    }
+    .tcl-mid-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .tcl-numpad-inline {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+      background: #131418;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+    }
+    .tcl-numpad-btn {
+      height: 28px;
+      border-radius: 6px;
+      background: #20232a;
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #f1f5f9;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      outline: none;
+    }
+    .tcl-numpad-btn:active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .tcl-app-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+    }
+    .tcl-app-btn {
+      height: 36px;
+      border-radius: 18px;
+      background: #101115;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      outline: none;
+      padding: 0 4px;
+    }
+    .tcl-app-btn:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .tcl-app-btn:active {
+      transform: scale(0.93);
+      filter: brightness(1.25);
+    }
+    .tcl-brandmark {
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      color: #4b5260;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.06);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    /* 2. CLASSIC OEM UNIVERSAL TV REMOTE */
+    .remote-classic {
+      width: 272px;
+      max-width: 100%;
+      background: #18191d;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 26px 26px 48px 48px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      padding: 20px 18px 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      user-select: none;
+    }
+    .classic-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 6px;
+    }
+    .classic-mute-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #282b33;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+      outline: none;
+      transition: all 0.12s;
+    }
+    .classic-mute-btn:active {
+      transform: scale(0.92);
+      background: #363b47;
+    }
+    .classic-power-btn {
+      width: 38px;
+      height: 28px;
+      border-radius: 6px;
+      background: #dc2626;
+      border: 1px solid #ef4444;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+      outline: none;
+      transition: all 0.12s;
+    }
+    .classic-power-btn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+    .classic-numpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      width: 100%;
+    }
+    .classic-key {
+      height: 30px;
+      border-radius: 6px;
+      background: #252830;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+      color: #f1f5f9;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.1s;
+    }
+    .classic-key:active {
+      transform: scale(0.92);
+      background: #343a47;
+      color: var(--accent);
+    }
+    .classic-text-key {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #94a3b8;
+    }
+    .classic-oval-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 12px;
+    }
+    .classic-oval-btn {
+      width: 52px;
+      height: 24px;
+      border-radius: 12px;
+      background: #272a32;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      color: #94a3b8;
+      font-size: 0.62rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.1s;
+    }
+    .classic-oval-btn:active {
+      transform: scale(0.92);
+      background: #363b46;
+      color: #fff;
+    }
+    .classic-cross-dpad {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin: 2px 0;
+    }
+    .classic-cross-mid {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .classic-cross-btn {
+      width: 36px;
+      height: 34px;
+      border-radius: 8px;
+      background: #262931;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.1s;
+    }
+    .classic-cross-btn:active {
+      transform: scale(0.92);
+      background: #343946;
+      color: var(--accent);
+    }
+    .classic-cross-ok {
+      width: 44px;
+      height: 42px;
+      border-radius: 10px;
+      background: #2d313c;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.45);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.1s;
+    }
+    .classic-cross-ok:active {
+      background: var(--accent);
+      transform: scale(0.92);
+    }
+    .classic-rockers-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 8px;
+    }
+    .classic-rocker {
+      width: 38px;
+      height: 84px;
+      border-radius: 18px;
+      background: #242730;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px;
+    }
+    .classic-rocker button {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      outline: none;
+    }
+    .classic-rocker button:active {
+      color: var(--accent);
+    }
+    .classic-rocker-text {
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: #64748b;
+      letter-spacing: 0.05em;
+    }
+    .classic-mid-ovals {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+    .classic-feature-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 4px;
+    }
+    .classic-feat-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .classic-feat-label {
+      font-size: 0.52rem;
+      font-weight: 800;
+      color: #64748b;
+      letter-spacing: 0.02em;
+    }
+    .classic-round-feat {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #2a2e38;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.1s;
+    }
+    .classic-round-feat:active {
+      transform: scale(0.9);
+      background: #3e4454;
+    }
+    .classic-color-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 4px;
+    }
+    .classic-color-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .classic-color-btn {
+      width: 42px;
+      height: 18px;
+      border-radius: 4px;
+      border: none;
+      color: #fff;
+      font-size: 0.62rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      outline: none;
+      transition: all 0.1s;
+    }
+    .classic-color-btn:active {
+      transform: scale(0.92);
+      filter: brightness(1.25);
+    }
+    .classic-f1 { background: #ef4444; }
+    .classic-f2 { background: #22c55e; }
+    .classic-f3 { background: #eab308; color: #111; }
+    .classic-f4 { background: #3b82f6; }
+    .classic-color-label {
+      font-size: 0.52rem;
+      font-weight: 700;
+      color: #64748b;
+    }
+
     /* Screen Mirror */
     .screen-container {
       width: 100%;
@@ -907,6 +1485,13 @@ HTML_MASTER = """<!DOCTYPE html>
       <button class="main-tab-btn" data-tab="system" onclick="switchMainTab('system')">System</button>
     </nav>
 
+    <!-- Subtabs for Remote -->
+    <div class="subtabs-bar active" data-parent="remote">
+      <button class="subtab-btn active" data-sub="tcl" onclick="switchSubTab('remote', 'tcl')">TCL Voice</button>
+      <button class="subtab-btn" data-sub="classic" onclick="switchSubTab('remote', 'classic')">Classic TV</button>
+      <button class="subtab-btn" data-sub="compact" onclick="switchSubTab('remote', 'compact')">Compact</button>
+    </div>
+
     <!-- Subtabs for Launcher -->
     <div class="subtabs-bar" data-parent="launcher">
       <button class="subtab-btn active" data-sub="layout" onclick="switchSubTab('launcher', 'layout')">Layout</button>
@@ -984,79 +1569,336 @@ HTML_MASTER = """<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: ERGONOMIC REMOTE -->
-        <div style="display:flex; flex-direction:column; gap:14px;">
-          <div class="card">
-            <div class="grid-3">
-              <button class="btn btn-danger" onclick="sendKey('POWER')">Power</button>
-              <button class="btn" onclick="sendKey('SETTINGS')">Settings</button>
-              <button class="btn" onclick="sendKey('MENU')">Menu</button>
-            </div>
+        <!-- RIGHT COLUMN: VIRTUAL COPIES OF REMOTES -->
+        <div style="display:flex; flex-direction:column; gap:14px; align-items:center;">
 
-            <!-- D-Pad with Central OK -->
-            <div class="dpad-container">
-              <button class="dpad-btn dpad-up" data-k="UP">▲</button>
-              <button class="dpad-btn dpad-left" data-k="LEFT">◀</button>
-              <button class="dpad-btn dpad-center" data-k="OK">OK</button>
-              <button class="dpad-btn dpad-right" data-k="RIGHT">▶</button>
-              <button class="dpad-btn dpad-down" data-k="DOWN">▼</button>
-            </div>
-
-            <div class="grid-2">
-              <button class="btn" onclick="sendKey('BACK')">Back</button>
-              <button class="btn" onclick="sendKey('HOME')">Home</button>
-            </div>
-
-            <!-- Volume & Channel Pills -->
-            <div class="cluster">
-              <div class="pill">
-                <button onclick="sendKey('VOL_UP')">▲</button>
-                <span>VOL</span>
-                <button onclick="sendKey('VOL_DOWN')">▼</button>
+          <!-- 1. TCL GOOGLE TV VOICE REMOTE (RC902V) -->
+          <div id="remote-view-tcl" class="remote-model-view" style="display:flex; justify-content:center; width:100%;">
+            <div class="remote-tcl">
+              <!-- Top Row: Mute, Mic Pinhole/LEDs, Power -->
+              <div class="tcl-row">
+                <button class="tcl-btn-round" data-k="MUTE" title="Mute">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                </button>
+                <div class="tcl-mic-cluster" title="Microphone">
+                  <span class="tcl-pinhole"></span>
+                  <div class="tcl-led-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+                <button class="tcl-btn-round tcl-btn-power" data-k="POWER" title="Power">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                </button>
               </div>
-              <div class="pill">
-                <button onclick="sendKey('CHANNEL_UP')">▲</button>
-                <span>CH</span>
-                <button onclick="sendKey('CHANNEL_DOWN')">▼</button>
+
+              <!-- Row 2: Source / Input, Menu -->
+              <div class="tcl-row">
+                <button class="tcl-btn-round" data-k="TV_INPUT" title="Source / Input">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M13 14l3-3-3-3"/><path d="M7 11h9"/></svg>
+                </button>
+                <button class="tcl-btn-round" data-k="MENU" title="Menu">
+                  <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                </button>
+              </div>
+
+              <!-- Center: Large Circular D-Pad Controller -->
+              <div class="tcl-dpad">
+                <button class="tcl-dpad-dir tcl-dpad-up" data-k="UP">▲</button>
+                <button class="tcl-dpad-dir tcl-dpad-left" data-k="LEFT">◀</button>
+                <button class="tcl-dpad-center" data-k="OK">OK</button>
+                <button class="tcl-dpad-dir tcl-dpad-right" data-k="RIGHT">▶</button>
+                <button class="tcl-dpad-dir tcl-dpad-down" data-k="DOWN">▼</button>
+              </div>
+
+              <!-- Row 4: Back, Google Assistant, Home -->
+              <div class="tcl-row">
+                <button class="tcl-btn-round" data-k="BACK" title="Back">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                </button>
+                <button class="tcl-btn-round tcl-btn-assistant" data-k="ASSIST" title="Google Assistant">
+                  <svg width="22" height="22" viewBox="0 0 24 24">
+                    <circle cx="6.5" cy="12" r="2.2" fill="#4285F4"/>
+                    <circle cx="12" cy="7" r="3" fill="#EA4335"/>
+                    <circle cx="17.5" cy="12" r="2.2" fill="#FBBC05"/>
+                    <circle cx="12" cy="17" r="2.2" fill="#34A853"/>
+                  </svg>
+                </button>
+                <button class="tcl-btn-round" data-k="HOME" title="Home">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+                </button>
+              </div>
+
+              <!-- Row 5: Settings, TV Guide -->
+              <div class="tcl-row">
+                <button class="tcl-btn-round" data-k="SETTINGS" title="Settings">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+                <button class="tcl-btn-round" data-k="GUIDE" title="Live TV / Guide">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                </button>
+              </div>
+
+              <!-- Row 6: Volume, 123/Info, Channel -->
+              <div class="tcl-rockers-row">
+                <div class="tcl-rocker-wrapper">
+                  <span class="tcl-rocker-label">VOL</span>
+                  <div class="tcl-rocker">
+                    <button data-k="VOL_UP">+</button>
+                    <div class="tcl-rocker-divider"></div>
+                    <button data-k="VOL_DOWN">−</button>
+                  </div>
+                </div>
+
+                <div class="tcl-mid-stack">
+                  <button class="tcl-btn-round" onclick="toggleTclNumpad()" title="Numeric Pad">
+                    <span style="font-size:0.75rem; font-weight:800; letter-spacing:-0.03em;">123</span>
+                  </button>
+                  <button class="tcl-btn-round" data-k="INFO" title="Info">
+                    <span style="font-size:0.85rem; font-weight:700;">ⓘ</span>
+                  </button>
+                </div>
+
+                <div class="tcl-rocker-wrapper">
+                  <span class="tcl-rocker-label">CH</span>
+                  <div class="tcl-rocker">
+                    <button data-k="CHANNEL_UP">∧</button>
+                    <div class="tcl-rocker-divider"></div>
+                    <button data-k="CHANNEL_DOWN">∨</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Inline Numpad for TCL -->
+              <div id="tclNumpadInline" class="tcl-numpad-inline" style="display:none;">
+                <button class="tcl-numpad-btn" data-k="NUM_1">1</button>
+                <button class="tcl-numpad-btn" data-k="NUM_2">2</button>
+                <button class="tcl-numpad-btn" data-k="NUM_3">3</button>
+                <button class="tcl-numpad-btn" data-k="NUM_4">4</button>
+                <button class="tcl-numpad-btn" data-k="NUM_5">5</button>
+                <button class="tcl-numpad-btn" data-k="NUM_6">6</button>
+                <button class="tcl-numpad-btn" data-k="NUM_7">7</button>
+                <button class="tcl-numpad-btn" data-k="NUM_8">8</button>
+                <button class="tcl-numpad-btn" data-k="NUM_9">9</button>
+                <button class="tcl-numpad-btn" data-k="BACK" style="font-size:0.7rem;">⌫</button>
+                <button class="tcl-numpad-btn" data-k="NUM_0">0</button>
+                <button class="tcl-numpad-btn" data-k="OK" style="font-size:0.7rem; color:var(--accent);">OK</button>
+              </div>
+
+              <!-- Streaming Apps 2x3 Grid -->
+              <div class="tcl-app-grid">
+                <button class="tcl-app-btn" onclick="appAction('launch','com.netflix.ninja')" title="Netflix">
+                  <span style="color:#e50914; font-weight:900; font-size:0.76rem; letter-spacing:0.04em;">NETFLIX</span>
+                </button>
+                <button class="tcl-app-btn" onclick="appAction('launch','com.amazon.amazonvideo.livingroom')" title="Prime Video">
+                  <span style="color:#fff; font-size:0.68rem; font-weight:700; line-height:1.1;">prime<br><span style="color:#38bdf8; font-size:0.62rem;">video</span></span>
+                </button>
+                <button class="tcl-app-btn" onclick="appAction('launch','com.google.android.youtube.tv')" title="YouTube">
+                  <svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="6" fill="#ef4444"/><polygon points="12,5 20,10 12,15" fill="#fff"/></svg>
+                </button>
+                <button class="tcl-app-btn" onclick="appAction('launch','com.apple.atve.androidtv.appletv')" title="Apple TV">
+                  <span style="color:#fff; font-size:0.72rem; font-weight:700;"> tv</span>
+                </button>
+                <button class="tcl-app-btn" onclick="appAction('launch','com.tcl.tv.plus')" title="TCL TV+">
+                  <span style="color:#fff; font-size:0.72rem; font-weight:800;">TCL<span style="color:#ef4444; font-size:0.65rem;">tv+</span></span>
+                </button>
+                <button class="tcl-app-btn" onclick="appAction('launch','com.disney.disneyplus')" title="Disney+">
+                  <span style="color:#fff; font-size:0.75rem; font-weight:800; font-style:italic;">Disney<span style="color:#38bdf8; font-style:normal;">+</span></span>
+                </button>
+              </div>
+
+              <!-- TCL Brand Wordmark -->
+              <div class="tcl-brandmark">TCL</div>
+            </div>
+          </div>
+
+          <!-- 2. CLASSIC OEM UNIVERSAL TV REMOTE -->
+          <div id="remote-view-classic" class="remote-model-view" style="display:none; justify-content:center; width:100%;">
+            <div class="remote-classic">
+              <!-- Top Row: Mute, Power -->
+              <div class="classic-top-row">
+                <button class="classic-mute-btn" data-k="MUTE" title="Mute">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                </button>
+                <button class="classic-power-btn" data-k="POWER" title="Power">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                </button>
+              </div>
+
+              <!-- 3x4 Numeric Keypad -->
+              <div class="classic-numpad-grid">
+                <button class="classic-key" data-k="NUM_1">1</button>
+                <button class="classic-key" data-k="NUM_2">2</button>
+                <button class="classic-key" data-k="NUM_3">3</button>
+                <button class="classic-key" data-k="NUM_4">4</button>
+                <button class="classic-key" data-k="NUM_5">5</button>
+                <button class="classic-key" data-k="NUM_6">6</button>
+                <button class="classic-key" data-k="NUM_7">7</button>
+                <button class="classic-key" data-k="NUM_8">8</button>
+                <button class="classic-key" data-k="NUM_9">9</button>
+                <button class="classic-key classic-text-key" data-k="DISPLAY">DISPLAY</button>
+                <button class="classic-key" data-k="NUM_0">0</button>
+                <button class="classic-key classic-text-key" data-k="RETURN">RETURN</button>
+              </div>
+
+              <!-- Control Row 1: SOURCE, MENU -->
+              <div class="classic-oval-row">
+                <button class="classic-oval-btn" data-k="SOURCE">SOURCE</button>
+                <button class="classic-oval-btn" data-k="MENU">MENU</button>
+              </div>
+
+              <!-- Diamond / Cross D-Pad -->
+              <div class="classic-cross-dpad">
+                <button class="classic-cross-btn classic-cross-up" data-k="UP">▲</button>
+                <div class="classic-cross-mid">
+                  <button class="classic-cross-btn classic-cross-left" data-k="LEFT">◀</button>
+                  <button class="classic-cross-ok" data-k="OK">OK</button>
+                  <button class="classic-cross-btn classic-cross-right" data-k="RIGHT">▶</button>
+                </div>
+                <button class="classic-cross-btn classic-cross-down" data-k="DOWN">▼</button>
+              </div>
+
+              <!-- Control Row 2: OPTION, EXIT -->
+              <div class="classic-oval-row">
+                <button class="classic-oval-btn" data-k="OPTION">OPTION</button>
+                <button class="classic-oval-btn" data-k="EXIT">EXIT</button>
+              </div>
+
+              <!-- Volume, TV/USB, Channel -->
+              <div class="classic-rockers-row">
+                <div class="classic-rocker">
+                  <button data-k="VOL_UP">+</button>
+                  <span class="classic-rocker-text">VOL</span>
+                  <button data-k="VOL_DOWN">−</button>
+                </div>
+
+                <div class="classic-mid-ovals">
+                  <button class="classic-oval-btn" data-k="TV">TV</button>
+                  <button class="classic-oval-btn" data-k="USB">USB</button>
+                </div>
+
+                <div class="classic-rocker">
+                  <button data-k="CHANNEL_UP">+</button>
+                  <span class="classic-rocker-text">CH</span>
+                  <button data-k="CHANNEL_DOWN">−</button>
+                </div>
+              </div>
+
+              <!-- Feature Row: ZOOM, P.EFFECT, S.EFFECT, SLEEP -->
+              <div class="classic-feature-row">
+                <div class="classic-feat-col">
+                  <span class="classic-feat-label">ZOOM</span>
+                  <button class="classic-round-feat" data-k="ZOOM" title="Zoom"></button>
+                </div>
+                <div class="classic-feat-col">
+                  <span class="classic-feat-label">P.EFFECT</span>
+                  <button class="classic-round-feat" data-k="PICTURE_MODE" title="Picture Effect"></button>
+                </div>
+                <div class="classic-feat-col">
+                  <span class="classic-feat-label">S.EFFECT</span>
+                  <button class="classic-round-feat" data-k="AUDIO_MODE" title="Sound Effect"></button>
+                </div>
+                <div class="classic-feat-col">
+                  <span class="classic-feat-label">SLEEP</span>
+                  <button class="classic-round-feat" data-k="SLEEP" title="Sleep Timer"></button>
+                </div>
+              </div>
+
+              <!-- Color Function Row: F1(Red/MTS), F2(Green/3D), F3(Yellow/Demo), F4(Blue/Demo) -->
+              <div class="classic-color-row">
+                <div class="classic-color-col">
+                  <button class="classic-color-btn classic-f1" data-k="RED">F1</button>
+                  <span class="classic-color-label">MTS</span>
+                </div>
+                <div class="classic-color-col">
+                  <button class="classic-color-btn classic-f2" data-k="GREEN">F2</button>
+                  <span class="classic-color-label">3D</span>
+                </div>
+                <div class="classic-color-col">
+                  <button class="classic-color-btn classic-f3" data-k="YELLOW">F3</button>
+                  <span class="classic-color-label">👁 DEMO</span>
+                </div>
+                <div class="classic-color-col">
+                  <button class="classic-color-btn classic-f4" data-k="BLUE">F4</button>
+                  <span class="classic-color-label">DEMO</span>
+                </div>
               </div>
             </div>
+          </div>
 
-            <button class="btn" onclick="sendKey('MUTE')">Mute</button>
+          <!-- 3. COMPACT ERGONOMIC REMOTE -->
+          <div id="remote-view-compact" class="remote-model-view" style="display:none; width:100%;">
+            <div class="card" style="width:100%;">
+              <div class="grid-3">
+                <button class="btn btn-danger" onclick="sendKey('POWER')">Power</button>
+                <button class="btn" onclick="sendKey('SETTINGS')">Settings</button>
+                <button class="btn" onclick="sendKey('MENU')">Menu</button>
+              </div>
 
-            <!-- Media Playback -->
-            <div class="grid-4">
-              <button class="btn" onclick="sendKey('PREV')">⏮</button>
-              <button class="btn" onclick="sendKey('REWIND')">⏪</button>
-              <button class="btn" onclick="sendKey('PLAY_PAUSE')">⏯</button>
-              <button class="btn" onclick="sendKey('FAST_FORWARD')">⏩</button>
-            </div>
+              <!-- D-Pad with Central OK -->
+              <div class="dpad-container">
+                <button class="dpad-btn dpad-up" data-k="UP">▲</button>
+                <button class="dpad-btn dpad-left" data-k="LEFT">◀</button>
+                <button class="dpad-btn dpad-center" data-k="OK">OK</button>
+                <button class="dpad-btn dpad-right" data-k="RIGHT">▶</button>
+                <button class="dpad-btn dpad-down" data-k="DOWN">▼</button>
+              </div>
 
-            <!-- Color Keys -->
-            <div class="grid-4">
-              <button class="btn color-btn btn-red" onclick="sendKey('RED')">●</button>
-              <button class="btn color-btn btn-green" onclick="sendKey('GREEN')">●</button>
-              <button class="btn color-btn btn-yellow" onclick="sendKey('YELLOW')">●</button>
-              <button class="btn color-btn btn-blue" onclick="sendKey('BLUE')">●</button>
-            </div>
+              <div class="grid-2">
+                <button class="btn" onclick="sendKey('BACK')">Back</button>
+                <button class="btn" onclick="sendKey('HOME')">Home</button>
+              </div>
 
-            <!-- Numpad Toggle -->
-            <div class="card-head">
-              <span class="card-title">Numeric Pad</span>
-              <span style="font-size:0.75rem; cursor:pointer; color:var(--accent);" onclick="toggleNumpad()">Toggle ▾</span>
-            </div>
-            <div id="numpadGrid" class="grid-3" style="display:none;">
-              <button class="btn" onclick="sendKey('NUM_1')">1</button>
-              <button class="btn" onclick="sendKey('NUM_2')">2</button>
-              <button class="btn" onclick="sendKey('NUM_3')">3</button>
-              <button class="btn" onclick="sendKey('NUM_4')">4</button>
-              <button class="btn" onclick="sendKey('NUM_5')">5</button>
-              <button class="btn" onclick="sendKey('NUM_6')">6</button>
-              <button class="btn" onclick="sendKey('NUM_7')">7</button>
-              <button class="btn" onclick="sendKey('NUM_8')">8</button>
-              <button class="btn" onclick="sendKey('NUM_9')">9</button>
-              <button class="btn" onclick="sendKey('INFO')">Info</button>
-              <button class="btn" onclick="sendKey('NUM_0')">0</button>
-              <button class="btn" onclick="sendKey('GUIDE')">Guide</button>
+              <!-- Volume & Channel Pills -->
+              <div class="cluster">
+                <div class="pill">
+                  <button onclick="sendKey('VOL_UP')">▲</button>
+                  <span>VOL</span>
+                  <button onclick="sendKey('VOL_DOWN')">▼</button>
+                </div>
+                <div class="pill">
+                  <button onclick="sendKey('CHANNEL_UP')">▲</button>
+                  <span>CH</span>
+                  <button onclick="sendKey('CHANNEL_DOWN')">▼</button>
+                </div>
+              </div>
+
+              <button class="btn" onclick="sendKey('MUTE')">Mute</button>
+
+              <!-- Media Playback -->
+              <div class="grid-4">
+                <button class="btn" onclick="sendKey('PREV')">⏮</button>
+                <button class="btn" onclick="sendKey('REWIND')">⏪</button>
+                <button class="btn" onclick="sendKey('PLAY_PAUSE')">⏯</button>
+                <button class="btn" onclick="sendKey('FAST_FORWARD')">⏩</button>
+              </div>
+
+              <!-- Color Keys -->
+              <div class="grid-4">
+                <button class="btn color-btn btn-red" onclick="sendKey('RED')">●</button>
+                <button class="btn color-btn btn-green" onclick="sendKey('GREEN')">●</button>
+                <button class="btn color-btn btn-yellow" onclick="sendKey('YELLOW')">●</button>
+                <button class="btn color-btn btn-blue" onclick="sendKey('BLUE')">●</button>
+              </div>
+
+              <!-- Numpad Toggle -->
+              <div class="card-head">
+                <span class="card-title">Numeric Pad</span>
+                <span style="font-size:0.75rem; cursor:pointer; color:var(--accent);" onclick="toggleNumpad()">Toggle ▾</span>
+              </div>
+              <div id="numpadGrid" class="grid-3" style="display:none;">
+                <button class="btn" onclick="sendKey('NUM_1')">1</button>
+                <button class="btn" onclick="sendKey('NUM_2')">2</button>
+                <button class="btn" onclick="sendKey('NUM_3')">3</button>
+                <button class="btn" onclick="sendKey('NUM_4')">4</button>
+                <button class="btn" onclick="sendKey('NUM_5')">5</button>
+                <button class="btn" onclick="sendKey('NUM_6')">6</button>
+                <button class="btn" onclick="sendKey('NUM_7')">7</button>
+                <button class="btn" onclick="sendKey('NUM_8')">8</button>
+                <button class="btn" onclick="sendKey('NUM_9')">9</button>
+                <button class="btn" onclick="sendKey('INFO')">Info</button>
+                <button class="btn" onclick="sendKey('NUM_0')">0</button>
+                <button class="btn" onclick="sendKey('GUIDE')">Guide</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1373,6 +2215,7 @@ HTML_MASTER = """<!DOCTYPE html>
   <script>
     let activeMainTab = 'remote';
     let activeSubTabs = {
+      remote: 'tcl',
       launcher: 'layout',
       media: 'trakt',
       storage: 'files',
@@ -1409,6 +2252,7 @@ HTML_MASTER = """<!DOCTYPE html>
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('panel-remote').classList.add('active');
         refreshScreen();
+        switchSubTab('remote', activeSubTabs.remote || 'tcl');
       } else {
         switchSubTab(mainTabId, activeSubTabs[mainTabId]);
       }
@@ -1422,6 +2266,14 @@ HTML_MASTER = """<!DOCTYPE html>
           b.classList.toggle('active', b.dataset.sub === subTabId);
         });
       }
+
+      if (mainTabId === 'remote') {
+        document.querySelectorAll('.remote-model-view').forEach(v => v.style.display = 'none');
+        const targetView = document.getElementById(`remote-view-${subTabId}`);
+        if (targetView) targetView.style.display = 'flex';
+        return;
+      }
+
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       const target = document.getElementById(`panel-${mainTabId}-${subTabId}`);
       if (target) target.classList.add('active');
@@ -1438,6 +2290,11 @@ HTML_MASTER = """<!DOCTYPE html>
     function toggleNumpad() {
       const el = document.getElementById('numpadGrid');
       el.style.display = (el.style.display === 'none') ? 'grid' : 'none';
+    }
+
+    function toggleTclNumpad() {
+      const el = document.getElementById('tclNumpadInline');
+      if (el) el.style.display = (el.style.display === 'none') ? 'grid' : 'none';
     }
 
     async function sendKey(key, isLong = false) {
@@ -2813,7 +3670,20 @@ def create_handler(server_ctx):
                 code = KEYCODES.get(key_name)
                 if code is None:
                     return self._send(400, b'{"error":"Unknown key"}')
-                cmd = f"input keyevent --longpress {code}" if is_long else f"input keyevent {code}"
+                if key_name in ("ASSIST", "VOICE"):
+                    cmd = "input keyevent 231 || input keyevent 84 || am start -n com.google.android.katniss/com.google.android.katniss.search.SearchActivity"
+                elif key_name == "TV":
+                    cmd = "input keyevent 170 || input keyevent KEYCODE_TV_INPUT_HDMI_1"
+                elif key_name == "USB":
+                    cmd = "input keyevent 255 || monkey -p com.google.android.videos -c android.intent.category.LAUNCHER 1 2>/dev/null || monkey -p com.android.gallery3d -c android.intent.category.LAUNCHER 1 2>/dev/null"
+                elif key_name == "ZOOM":
+                    cmd = "input keyevent 268 || input keyevent 168"
+                elif key_name == "PICTURE_MODE":
+                    cmd = "input keyevent 256 || input keyevent 176"
+                elif key_name == "AUDIO_MODE":
+                    cmd = "input keyevent 257 || input keyevent 176"
+                else:
+                    cmd = f"input keyevent --longpress {code}" if is_long else f"input keyevent {code}"
                 err, out = server_ctx.run_tv(cmd)
                 return self._send(200 if err == 0 else 500, json.dumps({"ok": err == 0, "output": out}).encode("utf-8"))
 
