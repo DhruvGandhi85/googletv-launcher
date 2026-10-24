@@ -2469,6 +2469,8 @@ HTML_MASTER = """<!DOCTYPE html>
         btn.textContent = 'Auto (3s)';
         refreshScreen();
       }
+    }
+
     // TV Trakt & Sports Config
     function toggleTvShelf(btn) {
       btn.classList.toggle('active');
