@@ -68,6 +68,7 @@ googletv-launcher/
 │   │   └── AndroidManifest.xml
 │   └── build-and-install.sh
 └── tools/
+    ├── web_remote.py                          # Browser remote & control center
     ├── tv.py                                  # ADB wrapper
     ├── b64push.py                             # Fast APK push
     └── restore.sh                             # Stock restore script
